@@ -1168,23 +1168,8 @@ function PaymentModal({ onClose, onSuccess, lang }) {
     return v;
   };
 
-  const handlePay = async () => {
-    if (
-      !form.name ||
-      form.card.replace(/\s/g, "").length < 16 ||
-      form.expiry.length < 5 ||
-      form.cvv.length < 3
-    )
-      return;
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1800));
-    setLoading(false);
-    setDone(true);
-    setTimeout(() => {
-      onSuccess();
-      onClose();
-    }, 1500);
-  };
+ window.open('https://buy.stripe.com/3cI5kGdai1XWgiO90K8Vi00', '_blank');
+};
 
   return (
     <div
