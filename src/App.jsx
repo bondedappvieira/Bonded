@@ -1168,8 +1168,9 @@ function PaymentModal({ onClose, onSuccess, lang }) {
     return v;
   };
 
- window.open('https://buy.stripe.com/3cI5kGdai1XWgiO90K8Vi00', '_blank');
-};
+ const handlePay = () =>
+   { window.open('https://buy.stripe.com/
+                 3cI5kGdai1XWgiO90K8Vi00', '_blank'); };
 
   return (
     <div
