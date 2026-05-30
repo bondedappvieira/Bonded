@@ -1,3 +1,18 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyA3HFYPJm-KeA1UJJDViTDkeQfl2k3GBL0",
+authDomain: "bonded-75e5e.firebaseapp.com",
+projectId: "bonded-75e5e",
+storageBucket: "bonded-75e5e.firebasestorage.app",
+messagingSenderId: "357218341238",
+appId: "1:357218341238:web:7018dd4778d5bc983cea57"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
 import { useState, useEffect, useRef } from "react";
 const T = {
   pt: {
