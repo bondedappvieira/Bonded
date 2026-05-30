@@ -1445,11 +1445,17 @@ const t = T[lang];
 const [isRegister, setIsRegister] = React.useState(false);
 const [email, setEmail] = React.useState("");
 const [password, setPassword] = React.useState("");
+const [password2, setPassword2] = React.useState("");
+
 const [error, setError] = React.useState("");
 
 const handleAuth = async () => {
 try {
-if (isRegister) {
+if (isRegister && password !== password2) {
+setError("As passwords não coincidem!");
+return;
+}
+  if (isRegister) {
 await createUserWithEmailAndPassword(auth, email, password);
 await addDoc(collection(db, "users"), {uid: auth.currentUser.uid, email, isPremium: false, createdAt: new Date().toISOString()});
 
@@ -1469,6 +1475,8 @@ return (
 <h2 style={{color:"#c9963a",textAlign:"center"}}>{isRegister ? "Criar Conta" : "Entrar"}</h2>
 <input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} style={{width:"100%",padding:12,marginBottom:12,borderRadius:4,border:"1px solid #c9963a"}}/>
 <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:12,marginBottom:12,borderRadius:4,border:"1px solid #c9963a"}}/>
+{isRegister && <input placeholder="Confirmar Password" type="password" value={password2} onChange={e=>setPassword2(e.target.value)} style={{width:"100%",padding:12,marginBottom:12,borderRadius:4,border:"1px solid #c9963a"}}/>}
+
 {error && <p style={{color:"red",fontSize:12}}>{error}</p>}
 <button onClick={handleAuth} style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:4,cursor:"pointer",marginBottom:8}}>
 {isRegister ? "Criar Conta" : "Entrar"}
