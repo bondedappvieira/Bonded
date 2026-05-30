@@ -1588,6 +1588,7 @@ loadCouples();
       message,
       photo: isPremium ? form.photo : null,
     };
+    await addDoc(collection(db, "couples"), newCouple);
     setCouples((prev) => [...prev, newCouple]);
     setLoading(false);
     setCert(newCouple);
