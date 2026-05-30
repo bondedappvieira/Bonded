@@ -2860,7 +2860,17 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
 <AuthModal
 lang={lang}
 onClose={() => setScreen("home")}
-onLogin={() => setUser(auth.currentUser)}
+onLogin={async () => {
+const u = auth.currentUser;
+setUser(u);
+if (u) {
+try {
+const userDoc = await getDocs(query(collection(db, "users"), where("uid", "==", u.uid)));
+if (!userDoc.empty) setIsPremium(userDoc.docs[0].data().isPremium || false);
+} catch(e) {}
+}
+}}
+
 />
 )}
     </div>
