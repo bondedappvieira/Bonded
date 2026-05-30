@@ -1465,7 +1465,15 @@ await signInWithEmailAndPassword(auth, email, password);
 onLogin();
 onClose();
 } catch(e) {
-setError(e.message);
+const errors = {
+"auth/wrong-password": "Password incorreta!",
+"auth/user-not-found": "Email não encontrado!",
+"auth/email-already-in-use": "Este email já está registado!",
+"auth/weak-password": "A password deve ter pelo menos 6 caracteres!",
+"auth/invalid-email": "Email inválido!",
+"auth/too-many-requests": "Muitas tentativas! Tente mais tarde.",
+};
+setError(errors[e.code] || "Erro ao entrar. Tente novamente.");
 }
 };
 
