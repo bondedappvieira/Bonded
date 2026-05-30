@@ -1624,6 +1624,7 @@ loadCouples();
       endDate,
       certId: "BND-FIM-" + Date.now().toString(36).toUpperCase(),
     };
+   if (couple.id) await updateDoc(doc(db, "couples", couple.id), {endDate, certId: "BND-FIM-" + Date.now().toString(36).toUpperCase()});
     setCouples((prev) => prev.map((c) => (c.id === couple.id ? ended : c)));
     setCert(ended);
     setEndSearch("");
