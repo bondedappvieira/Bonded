@@ -1540,6 +1540,18 @@ return (
 </button>
 <button onClick={()=>setIsRegister(!isRegister)} style={{width:"100%",padding:10,background:"transparent",border:"1px solid #c9963a",borderRadius:4,cursor:"pointer",color:"#c9963a"}}>
 {isRegister ? "Já tenho conta" : "Criar conta nova"}
+{!isRegister && <button onClick={async () => {
+if (!email) { setError("Escreve o teu email primeiro!"); return; }
+try {
+const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+await sendPasswordResetEmail(auth, email);
+setError("Email de recuperação enviado! Verifica o teu email.");
+} catch(e) {
+setError("Erro ao enviar email. Verifica o email introduzido.");
+}
+}} style={{width:"100%",padding:10,marginTop:8,background:"transparent",border:"none",cursor:"pointer",color:"#c9963a",fontSize:13}}>
+🔑 Esqueci a password
+</button>}
 </button>
 <button onClick={onClose} style={{width:"100%",padding:10,marginTop:8,background:"transparent",border:"none",cursor:"pointer",color:"#8a7060"}}>Fechar</button>
 </div>
