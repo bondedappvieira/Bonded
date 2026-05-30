@@ -1443,6 +1443,16 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(false);
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [couples, setCouples] = useState([]);
+  useEffect(() => {
+const loadCouples = async () => {
+const q = query(collection(db, "couples"));
+const snapshot = await getDocs(q);
+const data = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+setCouples(data);
+};
+loadCouples();
+}, []);
+
   const [form, setForm] = useState({
     person1: "",
     contact1: "",
