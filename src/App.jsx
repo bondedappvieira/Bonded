@@ -1495,7 +1495,7 @@ return () => unsub();
 }, []);
   useEffect(() => {
 const loadCouples = async () => {
-const q = query(collection(db, "couples"));
+const q = user ? query(collection(db, "couples"), where("contact1", "==", user.email)) : query(collection(db, "couples"));
 const snapshot = await getDocs(q);
 const data = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
 setCouples(data);
