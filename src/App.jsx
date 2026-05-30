@@ -2846,6 +2846,13 @@ loadCouples();
       {!gdprAccepted && (
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
+    {screen === "auth" && (
+<AuthModal
+lang={lang}
+onClose={() => setScreen("home")}
+onLogin={() => setUser(auth.currentUser)}
+/>
+)}
     </div>
   );
 }
