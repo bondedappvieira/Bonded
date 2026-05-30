@@ -1488,6 +1488,10 @@ export default function App() {
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [couples, setCouples] = useState([]);
   useEffect(() => {
+const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+return () => unsub();
+}, []);
+  useEffect(() => {
 const loadCouples = async () => {
 const q = query(collection(db, "couples"));
 const snapshot = await getDocs(q);
