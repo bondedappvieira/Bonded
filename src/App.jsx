@@ -1870,6 +1870,11 @@ loadCouples();
               <button onClick={() => setScreen("auth")} style={{...btn(false), marginBottom:8}}>
 {user ? "👤 " + user.email : "🔑 Entrar / Criar Conta"}
 </button>
+{user && (
+<button onClick={() => signOut(auth)} style={{...btn(false), marginBottom:8, fontSize:12}}>
+🚪 Sair da conta
+</button>
+)}
 
               <button onClick={() => goTo("register")} style={btn(true)}>
                 {t.btn_register}
