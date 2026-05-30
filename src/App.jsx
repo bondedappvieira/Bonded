@@ -1440,6 +1440,46 @@ function GDPRBanner({ lang, onAccept }) {
     </div>
   );
 }
+function AuthModal({onClose, lang, onLogin}) {
+const t = T[lang];
+const [isRegister, setIsRegister] = React.useState(false);
+const [email, setEmail] = React.useState("");
+const [password, setPassword] = React.useState("");
+const [error, setError] = React.useState("");
+
+const handleAuth = async () => {
+try {
+if (isRegister) {
+await createUserWithEmailAndPassword(auth, email, password);
+} else {
+await signInWithEmailAndPassword(auth, email, password);
+}
+onLogin();
+onClose();
+} catch(e) {
+setError(e.message);
+}
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:8,padding:32,maxWidth:400,width:"100%"}}>
+<h2 style={{color:"#c9963a",textAlign:"center"}}>{isRegister ? "Criar Conta" : "Entrar"}</h2>
+<input placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} style={{width:"100%",padding:12,marginBottom:12,borderRadius:4,border:"1px solid #c9963a"}}/>
+<input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} style={{width:"100%",padding:12,marginBottom:12,borderRadius:4,border:"1px solid #c9963a"}}/>
+{error && <p style={{color:"red",fontSize:12}}>{error}</p>}
+<button onClick={handleAuth} style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:4,cursor:"pointer",marginBottom:8}}>
+{isRegister ? "Criar Conta" : "Entrar"}
+</button>
+<button onClick={()=>setIsRegister(!isRegister)} style={{width:"100%",padding:10,background:"transparent",border:"1px solid #c9963a",borderRadius:4,cursor:"pointer",color:"#c9963a"}}>
+{isRegister ? "Já tenho conta" : "Criar conta nova"}
+</button>
+<button onClick={onClose} style={{width:"100%",padding:10,marginTop:8,background:"transparent",border:"none",cursor:"pointer",color:"#8a7060"}}>Fechar</button>
+</div>
+</div>
+);
+}
+
 export default function App() {
   const [lang, setLang] = useState("pt");
   const [screen, setScreen] = useState("home");
