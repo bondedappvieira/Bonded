@@ -1482,6 +1482,7 @@ return (
 
 export default function App() {
   const [lang, setLang] = useState("pt");
+  const [user, setUser] = useState(null);
   const [screen, setScreen] = useState("home");
   const [isPremium, setIsPremium] = useState(false);
   const [gdprAccepted, setGdprAccepted] = useState(false);
