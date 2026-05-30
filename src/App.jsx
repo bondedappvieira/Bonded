@@ -1867,6 +1867,10 @@ loadCouples();
                 marginTop: 6,
               }}
             >
+              <button onClick={() => setScreen("auth")} style={{...btn(false), marginBottom:8}}>
+{user ? "👤 " + user.email : "🔑 Entrar / Criar Conta"}
+</button>
+
               <button onClick={() => goTo("register")} style={btn(true)}>
                 {t.btn_register}
               </button>
