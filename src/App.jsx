@@ -2845,7 +2845,12 @@ loadCouples();
         <PaymentModal
           lang={lang}
           onClose={() => setShowPayment(false)}
-          onSuccess={() => setIsPremium(true)}
+          onSuccess={async () => {
+setIsPremium(true);
+if (user) {
+await updateDoc(doc(db, "users", user.uid), {isPremium: true});
+}
+}}
         />
       )}
       {!gdprAccepted && (
