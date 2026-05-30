@@ -1466,6 +1466,55 @@ onLogin();
 onClose();
 } catch(e) {
 const errors = {
+pt: {
+"auth/wrong-password": "Password incorreta!",
+"auth/user-not-found": "Email não encontrado!",
+"auth/email-already-in-use": "Este email já está registado!",
+"auth/weak-password": "A password deve ter pelo menos 6 caracteres!",
+"auth/invalid-email": "Email inválido!",
+"auth/too-many-requests": "Muitas tentativas! Tente mais tarde.",
+default: "Erro ao entrar. Tente novamente."
+},
+en: {
+"auth/wrong-password": "Wrong password!",
+"auth/user-not-found": "Email not found!",
+"auth/email-already-in-use": "This email is already registered!",
+"auth/weak-password": "Password must be at least 6 characters!",
+"auth/invalid-email": "Invalid email!",
+"auth/too-many-requests": "Too many attempts! Try again later.",
+default: "Login error. Please try again."
+},
+es: {
+"auth/wrong-password": "Contraseña incorrecta!",
+"auth/user-not-found": "Email no encontrado!",
+"auth/email-already-in-use": "Este email ya está registrado!",
+"auth/weak-password": "La contraseña debe tener al menos 6 caracteres!",
+"auth/invalid-email": "Email inválido!",
+"auth/too-many-requests": "Demasiados intentos! Inténtalo más tarde.",
+default: "Error al entrar. Inténtalo de nuevo."
+},
+fr: {
+"auth/wrong-password": "Mot de passe incorrect!",
+"auth/user-not-found": "Email introuvable!",
+"auth/email-already-in-use": "Cet email est déjà enregistré!",
+"auth/weak-password": "Le mot de passe doit avoir au moins 6 caractères!",
+"auth/invalid-email": "Email invalide!",
+"auth/too-many-requests": "Trop de tentatives! Réessayez plus tard.",
+default: "Erreur de connexion. Réessayez."
+},
+de: {
+"auth/wrong-password": "Falsches Passwort!",
+"auth/user-not-found": "Email nicht gefunden!",
+"auth/email-already-in-use": "Diese Email ist bereits registriert!",
+"auth/weak-password": "Das Passwort muss mindestens 6 Zeichen haben!",
+"auth/invalid-email": "Ungültige Email!",
+"auth/too-many-requests": "Zu viele Versuche! Versuchen Sie es später.",
+default: "Anmeldefehler. Bitte versuchen Sie es erneut."
+}
+};
+const langErrors = errors[lang] || errors.en;
+setError(langErrors[e.code] || langErrors.default);
+
 "auth/wrong-password": "Password incorreta!",
 "auth/user-not-found": "Email não encontrado!",
 "auth/email-already-in-use": "Este email já está registado!",
