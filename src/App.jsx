@@ -1451,6 +1451,8 @@ const handleAuth = async () => {
 try {
 if (isRegister) {
 await createUserWithEmailAndPassword(auth, email, password);
+await addDoc(collection(db, "users"), {uid: auth.currentUser.uid, email, isPremium: false, createdAt: new Date().toISOString()});
+
 } else {
 await signInWithEmailAndPassword(auth, email, password);
 }
