@@ -1559,6 +1559,21 @@ setError("Erro ao enviar email. Verifica o email introduzido.");
 );
 }
 
+const getStars = (followers) => {
+if (followers >= 1000000) return 5;
+if (followers >= 750000) return 4;
+if (followers >= 500000) return 3;
+if (followers >= 100000) return 2;
+if (followers >= 20000) return 1;
+return 0;
+};
+
+const renderStars = (count) => {
+if (count === 0) return null;
+return "⭐".repeat(count);
+};
+
+
 export default function App() {
   const [lang, setLang] = useState("pt");
   const [user, setUser] = useState(null);
