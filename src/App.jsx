@@ -2827,6 +2827,24 @@ loadCouples();
                         {t.free_desc}
                       </div>
                     </>
+                    {user && (
+<button onClick={() => {
+alert("Funcionalidade de presente em breve!");
+}} style={{
+marginTop: 12,
+padding: "8px 16px",
+background: "linear-gradient(135deg,#c9963a,#e8b96a)",
+color: "white",
+border: "none",
+borderRadius: 20,
+cursor: "pointer",
+fontSize: 13,
+fontWeight: 700,
+}}>
+🎁 Oferecer Premium
+</button>
+)}
+
                   )}
                 </div>
               )}
