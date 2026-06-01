@@ -2206,6 +2206,13 @@ alert("Erro ao eliminar conta. Tenta fazer login novamente.");
 {user && (
 <div style={{background:"#fff",borderRadius:12,padding:16,marginBottom:16,boxShadow:"0 2px 8px rgba(0,0,0,0.08)"}}>
 <textarea
+<input type="file" accept="image/*" id="postImage" style={{marginBottom:8,fontSize:12}} onChange={(e) => {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = (ev) => { window.postImageData = ev.target.result; };
+reader.readAsDataURL(file);
+}}/>
 placeholder="Partilha um momento especial..."
 style={{width:"100%",padding:12,borderRadius:8,border:"1px solid rgba(201,150,58,0.3)",fontSize:14,minHeight:80,resize:"none",fontFamily:"inherit"}}
 id="postText"
@@ -2218,6 +2225,7 @@ text,
 author: user.email,
 likes: 0,
 createdAt: new Date().toISOString(),
+image: window.postImageData || null,
 });
 document.getElementById("postText").value = "";
 alert("Publicado!");
