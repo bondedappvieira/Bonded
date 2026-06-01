@@ -1969,7 +1969,24 @@ loadCouples();
 {user && (
 <button onClick={() => signOut(auth)} style={{...btn(false), marginBottom:8, fontSize:12}}>
 🚪 Sair da conta
+</button>{user && (
+<button onClick={async () => {
+if (window.confirm("Tens a certeza que queres eliminar a tua conta? Esta acao e irreversivel e apaga todos os teus dados!")) {
+try {
+await user.delete();
+setUser(null);
+setIsPremium(false);
+setCouples([]);
+alert("Conta eliminada com sucesso!");
+} catch(e) {
+alert("Erro ao eliminar conta. Tenta fazer login novamente.");
+}
+}
+}} style={{...btn(false), marginBottom:8, color:"#c4606a", borderColor:"#c4606a", fontSize:12}}>
+🗑️ Eliminar conta
 </button>
+)}
+
 )}
 
               <button onClick={() => goTo("register")} style={btn(true)}>
