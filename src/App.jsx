@@ -1574,6 +1574,47 @@ return "⭐".repeat(count);
 };
 
 
+function Post({post, lang}) {
+const [liked, setLiked] = React.useState(false);
+const [likes, setLikes] = React.useState(post.likes || 0);
+
+const handleLike = async () => {
+const newLikes = liked ? likes - 1 : likes + 1;
+setLiked(!liked);
+setLikes(newLikes);
+if (post.id) {
+await updateDoc(doc(db, "posts", post.id), {likes: newLikes});
+}
+};
+
+return (
+<div style={{background:"#fff",borderRadius:12,padding:16,marginBottom:12,boxShadow:"0 2px 8px rgba(0,0,0,0.08)"}}>
+<div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+<div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#c9963a,#e8b96a)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700}}>
+{post.author ? post.author[0].toUpperCase() : "?"}
+</div>
+<div>
+<div style={{fontWeight:700,fontSize:13,color:"#1a1209"}}>{post.author || "Anónimo"}</div>
+<div style={{fontSize:11,color:"#8a7060"}}>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}</div>
+</div>
+</div>
+{post.text && <p style={{fontSize:14,color:"#1a1209",lineHeight:1.7,margin:"0 0 10px"}}>{post.text}</p>}
+{post.image && <img src={post.image} alt="post" style={{width:"100%",borderRadius:8,marginBottom:10}}/>}
+<div style={{display:"flex",gap:16,paddingTop:10,borderTop:"1px solid rgba(201,150,58,0.2)"}}>
+<button onClick={handleLike} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:liked?"#c4606a":"#8a7060"}}>
+{liked ? "❤️" : "🤍"} {likes}
+</button>
+<button style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#8a7060"}}>
+💬 Comentar
+</button>
+<button style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#8a7060"}}>
+🔗 Partilhar
+</button>
+</div>
+</div>
+);
+}
+
 export default function App() {
   const [lang, setLang] = useState("pt");
   const [user, setUser] = useState(null);
@@ -1962,18 +2003,7 @@ loadCouples();
                 marginTop: 6,
               }}
             >
-              <div style={{
-background: "rgba(201,150,58,0.1)",
-border: "1px solid rgba(201,150,58,0.3)",
-borderRadius: 8,
-padding: "10px 14px",
-fontSize: 11,
-color: "#4a3828",
-textAlign: "center",
-marginBottom: 8,
-}}>
-🔒 A tua lista de amigos e seguidores e completamente privada. Ninguem ve as tuas conexoes.
-</div>
+              
               <button onClick={() => setScreen("auth")} style={{...btn(false), marginBottom:8}}>
 {user ? "👤 " + user.email : "🔑 Entrar / Criar Conta"}
 </button>
