@@ -1574,6 +1574,32 @@ return "⭐".repeat(count);
 };
 
 
+function FeedList({user, lang}) {
+const [posts, setPosts] = React.useState([]);
+
+React.useEffect(() => {
+const loadPosts = async () => {
+const q = query(collection(db, "posts"));
+const snapshot = await getDocs(q);
+const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+setPosts(data.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
+};
+loadPosts();
+}, []);
+
+if (posts.length === 0) return (
+<div style={{textAlign:"center",color:"#8a7060",padding:32}}>
+Ainda nao ha publicacoes. Sê o primeiro! 😊
+</div>
+);
+
+return (
+<div>
+{posts.map(post => <Post key={post.id} post={post} lang={lang} />)}
+</div>
+);
+}
+
 function Post({post, lang}) {
 const [liked, setLiked] = React.useState(false);
 const [likes, setLikes] = React.useState(post.likes || 0);
@@ -2031,6 +2057,9 @@ alert("Erro ao eliminar conta. Tenta fazer login novamente.");
 
 )}
 
+             <button onClick={() => goTo("feed")} style={{...btn(false), marginBottom:8}}>
+📸 Feed
+</button>
               <button onClick={() => goTo("register")} style={btn(true)}>
                 {t.btn_register}
               </button>
@@ -2165,6 +2194,41 @@ alert("Erro ao eliminar conta. Tenta fazer login novamente.");
             )}
           </div>
         )}
+
+        {screen === "feed" && (
+<div className="fade">
+<button onClick={() => goTo("home")} style={{background:"none",border:"none",color:"#8a7060",cursor:"pointer",padding:"0 0 14px",fontSize:14}}>
+← Voltar
+</button>
+<div style={{textAlign:"center",marginBottom:16}}>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#1a1209"}}>📸 Feed</h2>
+</div>
+{user && (
+<div style={{background:"#fff",borderRadius:12,padding:16,marginBottom:16,boxShadow:"0 2px 8px rgba(0,0,0,0.08)"}}>
+<textarea
+placeholder="Partilha um momento especial..."
+style={{width:"100%",padding:12,borderRadius:8,border:"1px solid rgba(201,150,58,0.3)",fontSize:14,minHeight:80,resize:"none",fontFamily:"inherit"}}
+id="postText"
+/>
+<button onClick={async () => {
+const text = document.getElementById("postText").value;
+if (!text.trim()) return;
+await addDoc(collection(db, "posts"), {
+text,
+author: user.email,
+likes: 0,
+createdAt: new Date().toISOString(),
+});
+document.getElementById("postText").value = "";
+alert("Publicado!");
+}} style={{marginTop:8,padding:"10px 20px",background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:20,cursor:"pointer",fontWeight:700}}>
+📤 Publicar
+</button>
+</div>
+)}
+<FeedList user={user} lang={lang} />
+</div>
+)}
 
         {screen === "plans" && (
           <div className="fade">
