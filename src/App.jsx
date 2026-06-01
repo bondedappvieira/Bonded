@@ -1962,6 +1962,18 @@ loadCouples();
                 marginTop: 6,
               }}
             >
+              <div style={{
+background: "rgba(201,150,58,0.1)",
+border: "1px solid rgba(201,150,58,0.3)",
+borderRadius: 8,
+padding: "10px 14px",
+fontSize: 11,
+color: "#4a3828",
+textAlign: "center",
+marginBottom: 8,
+}}>
+🔒 A tua lista de amigos e seguidores e completamente privada. Ninguem ve as tuas conexoes.
+</div>
               <button onClick={() => setScreen("auth")} style={{...btn(false), marginBottom:8}}>
 {user ? "👤 " + user.email : "🔑 Entrar / Criar Conta"}
 </button>
