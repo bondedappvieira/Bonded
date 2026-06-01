@@ -1965,6 +1965,7 @@ loadCouples();
               <button onClick={() => setScreen("auth")} style={{...btn(false), marginBottom:8}}>
 {user ? "👤 " + user.email : "🔑 Entrar / Criar Conta"}
 </button>
+{user && followers > 0 && <span style={{marginLeft:6, fontSize:12}}>{renderStars(getStars(followers))}</span>}
 {user && (
 <button onClick={() => signOut(auth)} style={{...btn(false), marginBottom:8, fontSize:12}}>
 🚪 Sair da conta
