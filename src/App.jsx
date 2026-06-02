@@ -1603,6 +1603,8 @@ return (
 function Post({post, lang}) {
 const [liked, setLiked] = React.useState(false);
 const [likes, setLikes] = React.useState(post.likes || 0);
+const [showComments, setShowComments] = React.useState(false);
+
 
 const handleLike = async () => {
 const newLikes = liked ? likes - 1 : likes + 1;
@@ -1629,7 +1631,32 @@ return (
 <div style={{display:"flex",gap:16,paddingTop:10,borderTop:"1px solid rgba(201,150,58,0.2)"}}>
 <button onClick={handleLike} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:liked?"#c4606a":"#8a7060"}}>
 {liked ? "❤️" : "🤍"} {likes}
+<button onClick={() => setShowComments(!showComments)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:showComments?"#c9963a":"#8a7060"}}>
+
+💬 {post.comments ? post.comments.length : 0}
 </button>
+{showComments && (
+<div style={{marginTop:10,borderTop:"1px solid rgba(201,150,58,0.2)",paddingTop:10}}>
+{(post.comments || []).map((c,i) => (
+<div key={i} style={{fontSize:12,color:"#4a3828",marginBottom:6,padding:"6px 10px",background:"rgba(201,150,58,0.05)",borderRadius:6}}>
+<strong>{c.author}</strong>: {c.text}
+</div>
+))}
+<div style={{display:"flex",gap:8,marginTop:8}}>
+<input id={`comment-${post.id}`} placeholder="Escreve um comentário..." style={{flex:1,padding:"8px 12px",borderRadius:20,border:"1px solid rgba(201,150,58,0.3)",fontSize:12}}/>
+<button onClick={async () => {
+const input = document.getElementById(`comment-${post.id}`);
+if (!input.value.trim()) return;
+const newComment = {author: "Utilizador", text: input.value, createdAt: new Date().toISOString()};
+const updatedComments = [...(post.comments || []), newComment];
+if (post.id) await updateDoc(doc(db, "posts", post.id), {comments: updatedComments});
+input.value = "";
+}} style={{padding:"8px 14px",background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:20,cursor:"pointer",fontSize:12}}>
+Enviar
+</button>
+</div>
+</div>
+)}
 <button style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#8a7060"}}>
 💬 Comentar
 </button>
