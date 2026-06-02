@@ -1629,7 +1629,7 @@ alignSelf:msg.author === user.email ? "flex-end" : "flex-start",
 fontSize:13,
 boxShadow:"0 1px 4px rgba(0,0,0,0.08)",
 }}>
-{decryptMsg(msg.text)}
+
 <div style={{fontSize:10,opacity:0.7,marginTop:4,textAlign:"right"}}>
 {new Date(msg.createdAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
 </div>
@@ -1775,9 +1775,18 @@ return (
 <input id={`comment-${post.id}`} placeholder="Escreve um comentário..." style={{flex:1,padding:"8px 12px",borderRadius:20,border:"1px solid rgba(201,150,58,0.3)",fontSize:12}}/>
 <button onClick={async () => {
 const input = document.getElementById(`comment-${post.id}`);
-if (!input.value.trim()) return;
-const newComment = {author: "Utilizador", text: input.value, createdAt: new Date().toISOString()};
-const updatedComments = [...(post.comments || []), newComment];
+<div key={story.id} style={{minWidth:64,height:64,borderRadius:"50%",overflow:"hidden",border:"3px solid #c9963a",flexShrink:0,cursor:"pointer",position:"relative"}}
+onClick={() => {
+if (story.author === user?.email && window.confirm("Apagar este story?")) {
+updateDoc(doc(db, "stories", story.id), {expiresAt: new Date().toISOString()});
+}
+}}
+>
+<img src={story.image} alt="story" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+{story.author === user?.email && (
+<div style={{position:"absolute",top:0,right:0,background:"#c4606a",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,color:"white"}}>✕</div>
+)}
+</div>
 if (post.id) await updateDoc(doc(db, "posts", post.id), {comments: updatedComments});
 input.value = "";
 }} style={{padding:"8px 14px",background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:20,cursor:"pointer",fontSize:12}}>
