@@ -1661,6 +1661,15 @@ Enviar
 <button style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#8a7060"}}>
 🔗 Partilhar
 </button>
+{user && post.author === user.email && (
+<button onClick={async () => {
+if (window.confirm("Tens a certeza que queres apagar esta publicação?")) {
+await updateDoc(doc(db, "posts", post.id), {deleted: true});
+}
+}} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#c4606a"}}>
+🗑️ Apagar
+</button>
+)}
 </div>
 </div>
 );
