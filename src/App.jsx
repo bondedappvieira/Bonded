@@ -1,7 +1,8 @@
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 
 const firebaseConfig = {
 apiKey: "AIzaSyA3HFYPJm-KeA1UJJDViTDkeQfl2k3GBL0",
@@ -1577,14 +1578,11 @@ return "⭐".repeat(count);
 function FeedList({user, lang}) {
 const [posts, setPosts] = React.useState([]);
 
-React.useEffect(() => {
-const loadPosts = async () => {
-const q = query(collection(db, "posts"));
-const snapshot = await getDocs(q);
+const unsubscribe = onSnapshot(query(collection(db, "posts")), (snapshot) => {
 const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
 setPosts(data.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
-};
-loadPosts();
+});
+return () => unsubscribe();
 }, []);
 
 if (posts.length === 0) return (
