@@ -1575,6 +1575,59 @@ return "⭐".repeat(count);
 };
 
 
+function Stories({user}) {
+const [stories, setStories] = React.useState([]);
+
+React.useEffect(() => {
+const unsubscribe = onSnapshot(query(collection(db, "stories")), (snapshot) => {
+const now = new Date();
+const data = snapshot.docs
+.map(d => ({id: d.id, ...d.data()}))
+.filter(s => new Date(s.expiresAt) > now);
+setStories(data);
+});
+return () => unsubscribe();
+}, []);
+
+const addStory = async () => {
+const input = document.createElement("input");
+input.type = "file";
+input.accept = "image/*";
+input.onchange = (e) => {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = async (ev) => {
+const expiresAt = new Date(Date.now() + 24*60*60*1000).toISOString();
+await addDoc(collection(db, "stories"), {
+image: ev.target.result,
+author: user.email,
+createdAt: new Date().toISOString(),
+expiresAt,
+});
+};
+reader.readAsDataURL(file);
+};
+input.click();
+};
+
+return (
+<div style={{display:"flex",gap:12,overflowX:"auto",padding:"8px 0",marginBottom:16}}>
+{user && (
+<div onClick={addStory} style={{minWidth:64,height:64,borderRadius:"50%",background:"linear-gradient(135deg,#c9963a,#e8b96a)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:24,flexShrink:0}}>
+➕
+</div>
+)}
+{stories.map(story => (
+<div key={story.id} style={{minWidth:64,height:64,borderRadius:"50%",overflow:"hidden",border:"3px solid #c9963a",flexShrink:0,cursor:"pointer"}}>
+<img src={story.image} alt="story" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+</div>
+))}
+{stories.length === 0 && <div style={{fontSize:12,color:"#8a7060",padding:"20px 0"}}>Sem stories hoje</div>}
+</div>
+);
+}
+
 function FeedList({user, lang}) {
 const [posts, setPosts] = React.useState([]);
 
@@ -2268,6 +2321,7 @@ alert("Publicado!");
 </button>
 </div>
 )}
+<Stories user={user} />
 <FeedList user={user} lang={lang} />
 </div>
 )}
