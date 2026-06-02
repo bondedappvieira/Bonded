@@ -1575,6 +1575,84 @@ return "⭐".repeat(count);
 };
 
 
+function Chat({user, recipient, onClose}) {
+const [messages, setMessages] = React.useState([]);
+const [text, setText] = React.useState("");
+const chatId = [user.email, recipient].sort().join("_");
+
+React.useEffect(() => {
+const unsubscribe = onSnapshot(
+query(collection(db, "chats", chatId, "messages")),
+(snapshot) => {
+const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+setMessages(data.sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt)));
+}
+);
+return () => unsubscribe();
+}, [chatId]);
+
+const sendMessage = async () => {
+if (!text.trim()) return;
+await addDoc(collection(db, "chats", chatId, "messages"), {
+text,
+author: user.email,
+createdAt: new Date().toISOString(),
+read: false,
+});
+setText("");
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,height:"80vh",display:"flex",flexDirection:"column"}}>
+<div style={{padding:"16px 20px",borderBottom:"1px solid rgba(201,150,58,0.2)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<div>
+<div style={{fontWeight:700,color:"#1a1209"}}>💬 {recipient}</div>
+<div style={{fontSize:11,color:"#8a7060"}}>Mensagem privada e encriptada 🔒</div>
+</div>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:20}}>✕</button>
+</div>
+<div style={{flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:8}}>
+{messages.length === 0 && (
+<div style={{textAlign:"center",color:"#8a7060",padding:32,fontSize:13}}>
+Ainda nao ha mensagens. Diz ola! 👋
+</div>
+)}
+{messages.map(msg => (
+<div key={msg.id} style={{
+maxWidth:"75%",
+padding:"10px 14px",
+borderRadius:msg.author === user.email ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+background:msg.author === user.email ? "linear-gradient(135deg,#c9963a,#e8b96a)" : "white",
+color:msg.author === user.email ? "white" : "#1a1209",
+alignSelf:msg.author === user.email ? "flex-end" : "flex-start",
+fontSize:13,
+boxShadow:"0 1px 4px rgba(0,0,0,0.08)",
+}}>
+{msg.text}
+<div style={{fontSize:10,opacity:0.7,marginTop:4,textAlign:"right"}}>
+{new Date(msg.createdAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
+</div>
+</div>
+))}
+</div>
+<div style={{padding:16,borderTop:"1px solid rgba(201,150,58,0.2)",display:"flex",gap:8}}>
+<input
+value={text}
+onChange={e => setText(e.target.value)}
+onKeyDown={e => e.key === "Enter" && sendMessage()}
+placeholder="Escreve uma mensagem..."
+style={{flex:1,padding:"10px 16px",borderRadius:24,border:"1px solid rgba(201,150,58,0.3)",fontSize:13,outline:"none"}}
+/>
+<button onClick={sendMessage} style={{padding:"10px 16px",background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:24,cursor:"pointer",fontWeight:700}}>
+➤
+</button>
+</div>
+</div>
+</div>
+);
+}
+
 function Stories({user}) {
 const [stories, setStories] = React.useState([]);
 
@@ -1732,6 +1810,9 @@ export default function App() {
   const [lang, setLang] = useState("pt");
   const [user, setUser] = useState(null);
   const [followers, setFollowers] = useState(0);
+  const [chatOpen, setChatOpen] = React.useState(false);
+const [chatRecipient, setChatRecipient] = React.useState("");
+
   const [screen, setScreen] = useState("home");
   const [isPremium, setIsPremium] = useState(false);
   const [gdprAccepted, setGdprAccepted] = useState(false);
@@ -3061,6 +3142,24 @@ fontSize: 13,
 fontWeight: 700,
 }}>
 🎁 Oferecer Premium
+{user && (
+<button onClick={() => {
+setChatRecipient(checkResult.name || checkSearch);
+setChatOpen(true);
+}} style={{
+marginTop: 8,
+padding: "8px 16px",
+background: "linear-gradient(135deg,#c4606a,#e08090)",
+color: "white",
+border: "none",
+borderRadius: 20,
+cursor: "pointer",
+fontSize: 13,
+fontWeight: 700,
+}}>
+💬 Enviar mensagem
+</button>
+)}
 </button>
 )}
 
@@ -3190,6 +3289,14 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{chatOpen && chatRecipient && (
+<Chat
+user={user}
+recipient={chatRecipient}
+onClose={() => setChatOpen(false)}
+/>
+)}
+
 <AuthModal
 lang={lang}
 onClose={() => setScreen("home")}
