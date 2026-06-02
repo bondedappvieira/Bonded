@@ -1594,7 +1594,7 @@ return () => unsubscribe();
 const sendMessage = async () => {
 if (!text.trim()) return;
 await addDoc(collection(db, "chats", chatId, "messages"), {
-text,
+text: encryptMsg(text),
 author: user.email,
 createdAt: new Date().toISOString(),
 read: false,
@@ -1629,7 +1629,7 @@ alignSelf:msg.author === user.email ? "flex-end" : "flex-start",
 fontSize:13,
 boxShadow:"0 1px 4px rgba(0,0,0,0.08)",
 }}>
-{msg.text}
+{decryptMsg(msg.text)}
 <div style={{fontSize:10,opacity:0.7,marginTop:4,textAlign:"right"}}>
 {new Date(msg.createdAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
 </div>
