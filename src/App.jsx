@@ -1961,7 +1961,7 @@ style={{flex:1,padding:"10px 16px",borderRadius:24,border:"1px solid rgba(201,15
 );
 }
 
-function ProfilePage({user, profileEmail, onClose, onChat}) {
+function ProfilePage({user, JK, onChat}) {
 const [profile, setProfile] = React.useState(null);
 const [posts, setPosts] = React.useState([]);
 
@@ -2076,6 +2076,7 @@ await updateDoc(doc(db, "posts", post.id), {deleted: true});
 export default function App() {
   const [lang, setLang] = useState("pt");
   const [user, setUser] = useState(null);
+  const [ghostMode, setGhostMode] = useState(false);
   const [followers, setFollowers] = useState(0);
   const [notifications, setNotifications] = React.useState([]);
 const [showNotifications, setShowNotifications] = React.useState(false);
@@ -2525,7 +2526,20 @@ await updateDoc(doc(db, "notifications", n.id), {read: true});
 </button>
 {user && followers > 0 && <span style={{marginLeft:6, fontSize:12}}>{renderStars(getStars(followers))}</span>}
 {user && (
-<button onClick={() => signOut(auth)} style={{...btn(false), marginBottom:8, fontSize:12}}>
+
+{user && (
+<button onClick={async () => {
+const newGhostMode = !ghostMode;
+setGhostMode(newGhostMode);
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+await updateDoc(doc(db, "users", snapshot.docs[0].id), {ghostMode: newGhostMode});
+}
+}} style={{...btn(false), marginBottom:8, background: ghostMode ? "rgba(0,0,0,0.8)" : "transparent", color: ghostMode ? "white" : "#4a3828"}}>
+{ghostMode ? "👻 Modo Fantasma ON" : "👻 Ativar Modo Fantasma"}
+</button>
+)}<button onClick={() => signOut(auth)} style={{...btn(false), marginBottom:8, fontSize:12}}>
 🚪 Sair da conta
 </button>{user && (
   {user && (
@@ -3698,7 +3712,8 @@ setUser(u);
 if (u) {
 try {
 const userDoc = await getDocs(query(collection(db, "users"), where("uid", "==", u.uid)));
-if (!userDoc.empty) setIsPremium(userDoc.docs[0].data().isPremium || false);
+
+if (!userDoc.empty) setGhostMode(userDoc.docs[0].data().ghostMode || false);if (!userDoc.empty) setIsPremium(userDoc.docs[0].data().isPremium || false);
 } catch(e) {}
 }
 }}
