@@ -1738,6 +1738,52 @@ return (
 );
 }
 
+function ChatList({user, onOpenChat, onClose}) {
+const [chats, setChats] = React.useState([]);
+
+React.useEffect(() => {
+if (!user) return;
+const loadChats = async () => {
+const q = query(collection(db, "chats"));
+const snapshot = await getDocs(q);
+const userChats = snapshot.docs
+.filter(d => d.id.includes(user.email))
+.map(d => {
+const emails = d.id.split("_");
+const other = emails.find(e => e !== user.email);
+return {id: d.id, other};
+});
+setChats(userChats);
+};
+loadChats();
+}, [user]);
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:350,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24,maxHeight:"80vh",overflowY:"auto"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#1a1209",marginBottom:16}}>💬 Conversas</h2>
+{chats.length === 0 && (
+<div style={{textAlign:"center",color:"#8a7060",padding:32,fontSize:13}}>
+Ainda nao tens conversas. Envia uma mensagem a alguem! 😊
+</div>
+)}
+{chats.map(chat => (
+<div key={chat.id} onClick={() => onOpenChat(chat.other)} style={{display:"flex",alignItems:"center",gap:12,padding:14,borderBottom:"1px solid rgba(201,150,58,0.1)",cursor:"pointer",borderRadius:8}}>
+<div style={{width:48,height:48,borderRadius:"50%",background:"linear-gradient(135deg,#c9963a,#e8b96a)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,fontSize:18,flexShrink:0}}>
+{chat.other[0].toUpperCase()}
+</div>
+<div style={{flex:1}}>
+<div style={{fontWeight:700,fontSize:14,color:"#1a1209"}}>{chat.other}</div>
+<div style={{fontSize:12,color:"#8a7060"}}>Clica para ver a conversa</div>
+</div>
+<div style={{fontSize:20}}>›</div>
+</div>
+))}
+</div>
+</div>
+);
+}
 function SearchUsers({user, onViewProfile, onChat, onClose}) {
 const [search, setSearch] = React.useState("");
 const [results, setResults] = React.useState([]);
@@ -1922,6 +1968,7 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [chatOpen, setChatOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
+  const [chatListOpen, setChatListOpen] = React.useState(false);
 const [profileEmail, setProfileEmail] = React.useState("");
 
 const [chatRecipient, setChatRecipient] = React.useState("");
@@ -2267,6 +2314,9 @@ loadCouples();
         {screen === "home" && (
           <div className="fade">
             <div style={{position:"relative",display:"flex",justifyContent:"flex-end",padding:"0 0 8px"}}>
+<button onClick={() => setChatListOpen(true)} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,marginRight:8}}>
+💬
+</button>
 <button onClick={() => setSearchOpen(true)} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,marginRight:8}}>
 🔍
 </button>
@@ -3464,6 +3514,17 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{chatListOpen && (
+<ChatList
+user={user}
+onOpenChat={(email) => {
+setChatRecipient(email);
+setChatOpen(true);
+setChatListOpen(false);
+}}
+onClose={() => setChatListOpen(false)}
+/>
+)}
 {searchOpen && (
 <SearchUsers
 user={user}
