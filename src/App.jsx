@@ -1738,6 +1738,68 @@ return (
 );
 }
 
+function SearchUsers({user, onViewProfile, onChat, onClose}) {
+const [search, setSearch] = React.useState("");
+const [results, setResults] = React.useState([]);
+const [loading, setLoading] = React.useState(false);
+
+const handleSearch = async () => {
+if (!search.trim()) return;
+setLoading(true);
+try {
+const q = query(collection(db, "users"), where("email", ">=", search), where("email", "<=", search + "\uf8ff"));
+const snapshot = await getDocs(q);
+const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+setResults(data);
+} catch(e) {
+console.error(e);
+}
+setLoading(false);
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:350,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24,maxHeight:"80vh",overflowY:"auto"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#1a1209",marginBottom:16}}>🔍 Pesquisar pessoas</h2>
+<div style={{display:"flex",gap:8,marginBottom:16}}>
+<input
+value={search}
+onChange={e => setSearch(e.target.value)}
+onKeyDown={e => e.key === "Enter" && handleSearch()}
+placeholder="Pesquisa por email..."
+style={{flex:1,padding:"10px 16px",borderRadius:24,border:"1px solid rgba(201,150,58,0.3)",fontSize:13}}
+/>
+<button onClick={handleSearch} style={{padding:"10px 16px",background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:24,cursor:"pointer",fontWeight:700}}>
+🔍
+</button>
+</div>
+{loading && <div style={{textAlign:"center",color:"#8a7060",padding:20}}>A pesquisar...</div>}
+{results.length === 0 && !loading && search && <div style={{textAlign:"center",color:"#8a7060",padding:20,fontSize:13}}>Nenhum resultado encontrado</div>}
+{results.map(profile => (
+<div key={profile.id} style={{display:"flex",alignItems:"center",gap:12,padding:12,borderBottom:"1px solid rgba(201,150,58,0.1)"}}>
+<div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#c9963a,#e8b96a)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontWeight:700,flexShrink:0}}>
+{profile.email[0].toUpperCase()}
+</div>
+<div style={{flex:1}}>
+<div style={{fontWeight:700,fontSize:13,color:"#1a1209"}}>{profile.name || profile.email}</div>
+{profile.isPremium && <span style={{fontSize:10,color:"#c9963a"}}>👑 Premium</span>}
+</div>
+<div style={{display:"flex",gap:6}}>
+<button onClick={() => onViewProfile(profile.email)} style={{padding:"6px 12px",background:"linear-gradient(135deg,#4a3828,#8a7060)",color:"white",border:"none",borderRadius:16,cursor:"pointer",fontSize:11}}>
+👤
+</button>
+<button onClick={() => onChat(profile.email)} style={{padding:"6px 12px",background:"linear-gradient(135deg,#c4606a,#e08090)",color:"white",border:"none",borderRadius:16,cursor:"pointer",fontSize:11}}>
+💬
+</button>
+</div>
+</div>
+))}
+</div>
+</div>
+);
+}
+
 function ProfilePage({user, profileEmail, onClose, onChat}) {
 const [profile, setProfile] = React.useState(null);
 const [posts, setPosts] = React.useState([]);
@@ -1859,6 +1921,7 @@ const [showNotifications, setShowNotifications] = React.useState(false);
 
   const [chatOpen, setChatOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [searchOpen, setSearchOpen] = React.useState(false);
 const [profileEmail, setProfileEmail] = React.useState("");
 
 const [chatRecipient, setChatRecipient] = React.useState("");
@@ -2204,6 +2267,9 @@ loadCouples();
         {screen === "home" && (
           <div className="fade">
             <div style={{position:"relative",display:"flex",justifyContent:"flex-end",padding:"0 0 8px"}}>
+<button onClick={() => setSearchOpen(true)} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,marginRight:8}}>
+🔍
+</button>
 <button onClick={() => setShowNotifications(!showNotifications)} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,position:"relative"}}>
 🔔
 {notifications.length > 0 && (
@@ -3398,6 +3464,22 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{searchOpen && (
+<SearchUsers
+user={user}
+onViewProfile={(email) => {
+setProfileEmail(email);
+setProfileOpen(true);
+setSearchOpen(false);
+}}
+onChat={(email) => {
+setChatRecipient(email);
+setChatOpen(true);
+setSearchOpen(false);
+}}
+onClose={() => setSearchOpen(false)}
+/>
+)}
 {profileOpen && profileEmail && (
 <ProfilePage
 user={user}
