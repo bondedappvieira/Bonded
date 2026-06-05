@@ -1738,6 +1738,83 @@ return (
 );
 }
 
+function EditProfile({user, onClose, onSave}) {
+const [name, setName] = React.useState("");
+const [bio, setBio] = React.useState("");
+const [photo, setPhoto] = React.useState(null);
+const [loading, setLoading] = React.useState(false);
+
+React.useEffect(() => {
+const loadProfile = async () => {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+const data = snapshot.docs[0].data();
+setName(data.name || "");
+setBio(data.bio || "");
+setPhoto(data.photo || null);
+}
+};
+loadProfile();
+}, [user]);
+
+const handleSave = async () => {
+setLoading(true);
+try {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+await updateDoc(doc(db, "users", snapshot.docs[0].id), {
+name, bio, photo, updatedAt: new Date().toISOString()
+});
+} else {
+await addDoc(collection(db, "users"), {
+email: user.email, name, bio, photo,
+isPremium: false, createdAt: new Date().toISOString()
+});
+}
+onSave({name, bio, photo});
+onClose();
+} catch(e) {
+alert("Erro ao guardar perfil!");
+}
+setLoading(false);
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:350,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#1a1209",marginBottom:20}}>👤 Editar Perfil</h2>
+<div style={{textAlign:"center",marginBottom:20}}>
+<div style={{width:80,height:80,borderRadius:"50%",background:photo?"transparent":"linear-gradient(135deg,#c9963a,#e8b96a)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:32,fontWeight:700,margin:"0 auto 12px",overflow:"hidden",cursor:"pointer"}}
+onClick={() => document.getElementById("profilePhoto").click()}>
+{photo ? <img src={photo} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : user.email[0].toUpperCase()}
+</div>
+<input type="file" accept="image/*" id="profilePhoto" style={{display:"none"}} onChange={(e) => {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = (ev) => setPhoto(ev.target.result);
+reader.readAsDataURL(file);
+}}/>
+<div style={{fontSize:12,color:"#8a7060"}}>Clica na foto para alterar</div>
+</div>
+<div style={{marginBottom:12}}>
+<label style={{fontSize:12,color:"#8a7060",display:"block",marginBottom:4}}>Nome</label>
+<input value={name} onChange={e => setName(e.target.value)} placeholder="O teu nome" style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1px solid rgba(201,150,58,0.3)",fontSize:13}}/>
+</div>
+<div style={{marginBottom:20}}>
+<label style={{fontSize:12,color:"#8a7060",display:"block",marginBottom:4}}>Bio</label>
+<textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Fala um pouco sobre ti..." style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1px solid rgba(201,150,58,0.3)",fontSize:13,minHeight:80,resize:"none"}}/>
+</div>
+<button onClick={handleSave} disabled={loading} style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:14}}>
+{loading ? "A guardar..." : "💾 Guardar perfil"}
+</button>
+</div>
+</div>
+);
+}
 function ChatList({user, onOpenChat, onClose}) {
 const [chats, setChats] = React.useState([]);
 
@@ -1969,6 +2046,7 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [chatListOpen, setChatListOpen] = React.useState(false);
+  const [editProfileOpen, setEditProfileOpen] = React.useState(false);
 const [profileEmail, setProfileEmail] = React.useState("");
 
 const [chatRecipient, setChatRecipient] = React.useState("");
@@ -2412,6 +2490,11 @@ await updateDoc(doc(db, "notifications", n.id), {read: true});
 <button onClick={() => signOut(auth)} style={{...btn(false), marginBottom:8, fontSize:12}}>
 🚪 Sair da conta
 </button>{user && (
+  {user && (
+<button onClick={() => setEditProfileOpen(true)} style={{...btn(false), marginBottom:8}}>
+✏️ Editar perfil
+</button>
+)}
 <button onClick={async () => {
 if (window.confirm("Tens a certeza que queres eliminar a tua conta? Esta acao e irreversivel e apaga todos os teus dados!")) {
 try {
@@ -3514,6 +3597,13 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{editProfileOpen && (
+<EditProfile
+user={user}
+onClose={() => setEditProfileOpen(false)}
+onSave={(data) => console.log("Perfil atualizado", data)}
+/>
+)}
 {chatListOpen && (
 <ChatList
 user={user}
