@@ -1854,6 +1854,9 @@ export default function App() {
   const [lang, setLang] = useState("pt");
   const [user, setUser] = useState(null);
   const [followers, setFollowers] = useState(0);
+  const [notifications, setNotifications] = React.useState([]);
+const [showNotifications, setShowNotifications] = React.useState(false);
+
   const [chatOpen, setChatOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
 const [profileEmail, setProfileEmail] = React.useState("");
@@ -1868,6 +1871,17 @@ const [chatRecipient, setChatRecipient] = React.useState("");
 const unsub = onAuthStateChanged(auth, (u) => setUser(u));
 return () => unsub();
 }, []);
+useEffect(() => {
+if (!user) return;
+const unsubscribe = onSnapshot(
+query(collection(db, "notifications"), where("to", "==", user.email)),
+(snapshot) => {
+const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+setNotifications(data.filter(n => !n.read).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
+}
+);
+return () => unsubscribe();
+}, [user]);
   useEffect(() => {
 const loadCouples = async () => {
 const q = user ? query(collection(db, "couples"), where("contact1", "==", user.email)) : query(collection(db, "couples"));
@@ -2189,6 +2203,35 @@ loadCouples();
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "22px 16px" }}>
         {screen === "home" && (
           <div className="fade">
+            <div style={{position:"relative",display:"flex",justifyContent:"flex-end",padding:"0 0 8px"}}>
+<button onClick={() => setShowNotifications(!showNotifications)} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,position:"relative"}}>
+🔔
+{notifications.length > 0 && (
+<span style={{position:"absolute",top:-4,right:-4,background:"#c4606a",color:"white",borderRadius:"50%",width:16,height:16,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>
+{notifications.length}
+</span>
+)}
+</button>
+{showNotifications && (
+<div style={{position:"absolute",top:32,right:0,background:"white",borderRadius:12,boxShadow:"0 4px 20px rgba(0,0,0,0.15)",width:280,zIndex:100,overflow:"hidden"}}>
+<div style={{padding:"12px 16px",borderBottom:"1px solid rgba(201,150,58,0.2)",fontWeight:700,color:"#1a1209"}}>
+🔔 Notificacoes
+</div>
+{notifications.length === 0 && (
+<div style={{padding:20,textAlign:"center",color:"#8a7060",fontSize:13}}>Sem notificacoes</div>
+)}
+{notifications.map(n => (
+<div key={n.id} onClick={async () => {
+await updateDoc(doc(db, "notifications", n.id), {read: true});
+}} style={{padding:"12px 16px",borderBottom:"1px solid rgba(201,150,58,0.1)",cursor:"pointer",fontSize:13,color:"#1a1209"}}>
+{n.message}
+<div style={{fontSize:11,color:"#8a7060",marginTop:2}}>{new Date(n.createdAt).toLocaleDateString()}</div>
+</div>
+))}
+</div>
+)}
+</div>
+
             <div style={{ textAlign: "center", padding: "24px 0 20px" }}>
               <div
                 style={{
