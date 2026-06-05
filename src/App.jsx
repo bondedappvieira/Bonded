@@ -1738,6 +1738,32 @@ return (
 );
 }
 
+function ProfilePage({user, profileEmail, onClose, onChat}) {
+const [profile, setProfile] = React.useState(null);
+const [posts, setPosts] = React.useState([]);
+
+React.useEffect(() => {
+const loadProfile = async () => {
+const q = query(collection(db, "users"), where("email", "==", profileEmail));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) setProfile({id: snapshot.docs[0].id, ...snapshot.docs[0].data()});
+};
+const loadPosts = async () => {
+const q = query(collection(db, "posts"), where("author", "==", profileEmail));
+const snapshot = await getDocs(q);
+const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+setPosts(data.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
+};
+loadProfile();
+loadPosts();
+}, [profileEmail]);
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:350,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<div style={{textAlign:"center",marginBottom:20}}>
+<div style={{width:80,height:80,borderRadius:"50%",background:"linear-gradient(135deg,#c9963a,#e8b96a)",display:"flex",alignItems:"center",justifyContent:"center",color:"white",fontSize:32,font
 function Post({post, lang}) {
 const [liked, setLiked] = React.useState(false);
 const [likes, setLikes] = React.useState(post.likes || 0);
@@ -1829,6 +1855,9 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [followers, setFollowers] = useState(0);
   const [chatOpen, setChatOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
+const [profileEmail, setProfileEmail] = React.useState("");
+
 const [chatRecipient, setChatRecipient] = React.useState("");
 
   const [screen, setScreen] = useState("home");
@@ -3175,6 +3204,25 @@ cursor: "pointer",
 fontSize: 13,
 fontWeight: 700,
 }}>
+{user && (
+<button onClick={() => {
+setProfileEmail(checkSearch);
+setProfileOpen(true);
+}} style={{
+marginTop: 8,
+padding: "8px 16px",
+background: "linear-gradient(135deg,#4a3828,#8a7060)",
+color: "white",
+border: "none",
+borderRadius: 20,
+cursor: "pointer",
+fontSize: 13,
+fontWeight: 700,
+}}>
+👤 Ver perfil
+</button>
+)}
+
 💬 Enviar mensagem
 </button>
 )}
@@ -3307,6 +3355,18 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{profileOpen && profileEmail && (
+<ProfilePage
+user={user}
+profileEmail={profileEmail}
+onClose={() => setProfileOpen(false)}
+onChat={(email) => {
+setChatRecipient(email);
+setChatOpen(true);
+setProfileOpen(false);
+}}
+/>
+)}
 {chatOpen && chatRecipient && (
 <Chat
 user={user}
