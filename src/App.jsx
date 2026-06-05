@@ -1629,10 +1629,19 @@ alignSelf:msg.author === user.email ? "flex-end" : "flex-start",
 fontSize:13,
 boxShadow:"0 1px 4px rgba(0,0,0,0.08)",
 }}>
-
+{decryptMsg(msg.text)}
 <div style={{fontSize:10,opacity:0.7,marginTop:4,textAlign:"right"}}>
 {new Date(msg.createdAt).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
 </div>
+{msg.author === user.email && (
+<button onClick={async () => {
+if (window.confirm("Apagar esta mensagem?")) {
+await updateDoc(doc(db, "chats", chatId, "messages", msg.id), {text: "🗑️ Mensagem apagada", deleted: true});
+}
+}} style={{background:"none",border:"none",cursor:"pointer",fontSize:10,color:"rgba(255,255,255,0.6)",padding:0}}>
+🗑️
+</button>
+)}
 </div>
 ))}
 </div>
