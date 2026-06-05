@@ -675,7 +675,26 @@ const T = {
     anniversary_title: "Jubiläen",
   },
 };
-const C = {
+const isNightTime = () => {
+const hour = new Date().getHours();
+return hour >= 22 || hour < 7;
+};
+
+const darkTheme = {
+cream: "#1a1209",
+warm: "#2a1f12",
+gold: "#e8b96a",
+goldLight: "#c9963a",
+rose: "#e08090",
+roseLight: "#c4606a",
+ink: "#fdf6ee",
+inkMid: "#e5d5c0",
+inkLight: "#b8a090",
+white: "#1a1209",
+border: "rgba(232,185,106,0.25)",
+premiumBg: "linear-gradient(135deg,#2a0a4e,#4d1080)",
+premiumGold: "#ffd700",
+};const C = {
   cream: "#fdf6ee",
   warm: "#f5e6d3",
   gold: "#c9963a",
@@ -2077,6 +2096,9 @@ export default function App() {
   const [lang, setLang] = useState("pt");
   const [user, setUser] = useState(null);
   const [ghostMode, setGhostMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(isNightTime());
+const theme = darkMode ? darkTheme : C;
+
   const [followers, setFollowers] = useState(0);
   const [notifications, setNotifications] = React.useState([]);
 const [showNotifications, setShowNotifications] = React.useState(false);
@@ -2094,6 +2116,12 @@ const [chatRecipient, setChatRecipient] = React.useState("");
   const [isPremium, setIsPremium] = useState(false);
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [couples, setCouples] = useState([]);
+  useEffect(() => {
+const checkTime = () => setDarkMode(isNightTime());
+const interval = setInterval(checkTime, 60000);
+return () => clearInterval(interval);
+}, []);
+
   useEffect(() => {
 const unsub = onAuthStateChanged(auth, (u) => setUser(u));
 return () => unsub();
@@ -2537,6 +2565,10 @@ if (!snapshot.empty) {
 await updateDoc(doc(db, "users", snapshot.docs[0].id), {ghostMode: newGhostMode});
 }
 }} style={{...btn(false), marginBottom:8, background: ghostMode ? "rgba(0,0,0,0.8)" : "transparent", color: ghostMode ? "white" : "#4a3828"}}>
+<button onClick={() => setDarkMode(!darkMode)} style={{...btn(false), marginBottom:8}}>
+{darkMode ? "☀️ Modo Claro" : "🌙 Modo Noturno"}
+</button>
+
 {ghostMode ? "👻 Modo Fantasma ON" : "👻 Ativar Modo Fantasma"}
 </button>
 )}<button onClick={() => signOut(auth)} style={{...btn(false), marginBottom:8, fontSize:12}}>
