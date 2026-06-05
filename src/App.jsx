@@ -1795,6 +1795,96 @@ return (
 </div>
 );
 }
+function VerifiedBadge({verified, size=16}) {
+if (!verified) return null;
+return (
+<span style={{
+display:"inline-flex",
+alignItems:"center",
+justifyContent:"center",
+width:size,
+height:size,
+borderRadius:"50%",
+background:"linear-gradient(135deg,#1a90ff,#0060cc)",
+color:"white",
+fontSize:size*0.6,
+fontWeight:700,
+marginLeft:4,
+}}>✓</span>
+);
+}
+
+function RequestVerification({user, onClose}) {
+const [docType, setDocType] = React.useState("passport");
+const [docImage, setDocImage] = React.useState(null);
+const [loading, setLoading] = React.useState(false);
+const [sent, setSent] = React.useState(false);
+
+const handleSubmit = async () => {
+if (!docImage) { alert("Adiciona uma foto do documento!"); return; }
+setLoading(true);
+try {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+await updateDoc(doc(db, "users", snapshot.docs[0].id), {
+verificationStatus: "pending",
+verificationDoc: docType,
+verificationImage: docImage,
+verificationDate: new Date().toISOString()
+});
+setSent(true);
+}
+} catch(e) {
+alert("Erro ao enviar!");
+}
+setLoading(false);
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:350,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#1a1209",marginBottom:4}}>✅ Bonded Verified</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:20}}>Verifica a tua identidade para obter o visto azul no teu perfil.</p>
+{sent ? (
+<div style={{textAlign:"center",padding:32}}>
+<div style={{fontSize:48,marginBottom:12}}>✅</div>
+<div style={{fontWeight:700,color:"#1a1209",marginBottom:8}}>Pedido enviado!</div>
+<div style={{fontSize:13,color:"#8a7060"}}>A equipa do Bonded vai verificar o teu documento em 24-48 horas.</div>
+</div>
+) : (
+<>
+<div style={{marginBottom:12}}>
+<label style={{fontSize:12,color:"#8a7060",display:"block",marginBottom:4}}>Tipo de documento</label>
+<select value={docType} onChange={e => setDocType(e.target.value)} style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1px solid rgba(201,150,58,0.3)",fontSize:13}}>
+<option value="passport">Passaporte</option>
+<option value="id">Bilhete de Identidade</option>
+<option value="driving">Carta de Conducao</option>
+</select>
+</div>
+<div style={{marginBottom:20}}>
+<label style={{fontSize:12,color:"#8a7060",display:"block",marginBottom:4}}>Foto do documento</label>
+<div onClick={() => document.getElementById("verificationDoc").click()} style={{border:"2px dashed rgba(201,150,58,0.3)",borderRadius:8,padding:20,textAlign:"center",cursor:"pointer",background:docImage?"transparent":"rgba(201,150,58,0.05)"}}>
+{docImage ? <img src={docImage} style={{maxWidth:"100%",borderRadius:8}}/> : <div style={{color:"#8a7060",fontSize:13}}>Clica para adicionar foto do documento</div>}
+</div>
+<input type="file" accept="image/*" id="verificationDoc" style={{display:"none"}} onChange={(e) => {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = (ev) => setDocImage(ev.target.result);
+reader.readAsDataURL(file);
+}}/>
+</div>
+<button onClick={handleSubmit} disabled={loading} style={{width:"100%",padding:14,background:"linear-gradient(135deg,#1a90ff,#0060cc)",color:"white",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:14}}>
+{loading ? "A enviar..." : "✅ Pedir Verificacao"}
+</button>
+</>
+)}
+</div>
+</div>
+);
+}
 function SecondProfile({user, onClose}) {
 const [name, setName] = React.useState("");
 const [bio, setBio] = React.useState("");
@@ -2186,6 +2276,8 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [chatListOpen, setChatListOpen] = React.useState(false);
   const [editProfileOpen, setEditProfileOpen] = React.useState(false);
   const [secondProfileOpen, setSecondProfileOpen] = React.useState(false);
+  const [verificationOpen, setVerificationOpen] = React.useState(false);
+
 
 const [profileEmail, setProfileEmail] = React.useState("");
 
@@ -2660,6 +2752,11 @@ await updateDoc(doc(db, "users", snapshot.docs[0].id), {ghostMode: newGhostMode}
 <button onClick={() => setSecondProfileOpen(true)} style={{...btn(false), marginBottom:8}}>
 🎭 Perfil Privado
 </button>
+{user && (
+<button onClick={() => setVerificationOpen(true)} style={{...btn(false), marginBottom:8}}>
+✅ Pedir Verificacao
+</button>
+)}
 )}
 )}
 <button onClick={async () => {
@@ -3764,6 +3861,12 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{verificationOpen && (
+<RequestVerification
+user={user}
+onClose={() => setVerificationOpen(false)}
+/>
+)}
 {secondProfileOpen && (
 <SecondProfile
 user={user}
