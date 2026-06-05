@@ -1738,6 +1738,44 @@ return (
 );
 }
 
+function ProfileStats({userEmail}) {
+const [stats, setStats] = React.useState({posts: 0, followers: 0, following: 0});
+
+React.useEffect(() => {
+const loadStats = async () => {
+const postsQ = query(collection(db, "posts"), where("author", "==", userEmail));
+const postsSnap = await getDocs(postsQ);
+
+const followersQ = query(collection(db, "follows"), where("following", "==", userEmail));
+const followersSnap = await getDocs(followersQ);
+
+const followingQ = query(collection(db, "follows"), where("follower", "==", userEmail));
+const followingSnap = await getDocs(followingQ);
+
+setStats({
+posts: postsSnap.size,
+followers: followersSnap.size,
+following: followingSnap.size,
+});
+};
+loadStats();
+}, [userEmail]);
+
+return (
+<div style={{display:"flex",gap:0,borderTop:"1px solid rgba(201,150,58,0.2)",borderBottom:"1px solid rgba(201,150,58,0.2)",margin:"12px 0"}}>
+{[
+{label:"Publicacoes", value:stats.posts},
+{label:"Seguidores", value:stats.followers},
+{label:"A seguir", value:stats.following},
+].map((s,i) => (
+<div key={i} style={{flex:1,textAlign:"center",padding:"12px 0",borderRight:i<2?"1px solid rgba(201,150,58,0.2)":"none"}}>
+<div style={{fontWeight:700,fontSize:18,color:"#1a1209"}}>{s.value}</div>
+<div style={{fontSize:11,color:"#8a7060"}}>{s.label}</div>
+</div>
+))}
+</div>
+);
+}
 function EditProfile({user, onClose, onSave}) {
 const [name, setName] = React.useState("");
 const [bio, setBio] = React.useState("");
