@@ -1795,6 +1795,83 @@ return (
 </div>
 );
 }
+function SecondProfile({user, onClose}) {
+const [name, setName] = React.useState("");
+const [bio, setBio] = React.useState("");
+const [photo, setPhoto] = React.useState(null);
+const [loading, setLoading] = React.useState(false);
+
+React.useEffect(() => {
+const loadProfile = async () => {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+const data = snapshot.docs[0].data();
+setName(data.secondName || "");
+setBio(data.secondBio || "");
+setPhoto(data.secondPhoto || null);
+}
+};
+loadProfile();
+}, [user]);
+
+const handleSave = async () => {
+setLoading(true);
+try {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+await updateDoc(doc(db, "users", snapshot.docs[0].id), {
+secondName: name,
+secondBio: bio,
+secondPhoto: photo,
+updatedAt: new Date().toISOString()
+});
+alert("Perfil privado guardado!");
+onClose();
+}
+} catch(e) {
+alert("Erro ao guardar!");
+}
+setLoading(false);
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:350,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#1a1209",borderRadius:12,width:"100%",maxWidth:480,padding:24,border:"2px solid #c9963a"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#c9963a",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#c9963a",marginBottom:4}}>🎭 Perfil Privado</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:20}}>Este perfil e completamente separado do teu perfil publico. Ninguem sabe que existe.</p>
+<div style={{textAlign:"center",marginBottom:20}}>
+<div style={{width:80,height:80,borderRadius:"50%",background:photo?"transparent":"linear-gradient(135deg,#4a3828,#8a7060)",display:"flex",alignItems:"center",justifyContent:"center",color:"#c9963a",fontSize:32,fontWeight:700,margin:"0 auto 12px",overflow:"hidden",cursor:"pointer",border:"2px solid #c9963a"}}
+onClick={() => document.getElementById("secondPhoto").click()}>
+{photo ? <img src={photo} style={{width:"100%",height:"100%",objectFit:"cover"}}/> : "🎭"}
+</div>
+<input type="file" accept="image/*" id="secondPhoto" style={{display:"none"}} onChange={(e) => {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = (ev) => setPhoto(ev.target.result);
+reader.readAsDataURL(file);
+}}/>
+<div style={{fontSize:12,color:"#8a7060"}}>Clica para adicionar foto privada</div>
+</div>
+<div style={{marginBottom:12}}>
+<label style={{fontSize:12,color:"#8a7060",display:"block",marginBottom:4}}>Nome privado</label>
+<input value={name} onChange={e => setName(e.target.value)} placeholder="Nome do teu perfil privado" style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1px solid #c9963a",fontSize:13,background:"#2a1f12",color:"#fdf6ee"}}/>
+</div>
+<div style={{marginBottom:20}}>
+<label style={{fontSize:12,color:"#8a7060",display:"block",marginBottom:4}}>Bio privada</label>
+<textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Bio do teu perfil privado..." style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1px solid #c9963a",fontSize:13,minHeight:80,resize:"none",background:"#2a1f12",color:"#fdf6ee"}}/>
+</div>
+<button onClick={handleSave} disabled={loading} style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"#1a1209",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:14}}>
+{loading ? "A guardar..." : "🎭 Guardar Perfil Privado"}
+</button>
+</div>
+</div>
+);
+}
+
 function EditProfile({user, onClose, onSave}) {
 const [name, setName] = React.useState("");
 const [bio, setBio] = React.useState("");
@@ -2108,6 +2185,8 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [chatListOpen, setChatListOpen] = React.useState(false);
   const [editProfileOpen, setEditProfileOpen] = React.useState(false);
+  const [secondProfileOpen, setSecondProfileOpen] = React.useState(false);
+
 const [profileEmail, setProfileEmail] = React.useState("");
 
 const [chatRecipient, setChatRecipient] = React.useState("");
@@ -2578,6 +2657,10 @@ await updateDoc(doc(db, "users", snapshot.docs[0].id), {ghostMode: newGhostMode}
 <button onClick={() => setEditProfileOpen(true)} style={{...btn(false), marginBottom:8}}>
 ✏️ Editar perfil
 </button>
+<button onClick={() => setSecondProfileOpen(true)} style={{...btn(false), marginBottom:8}}>
+🎭 Perfil Privado
+</button>
+)}
 )}
 <button onClick={async () => {
 if (window.confirm("Tens a certeza que queres eliminar a tua conta? Esta acao e irreversivel e apaga todos os teus dados!")) {
@@ -3681,6 +3764,12 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{secondProfileOpen && (
+<SecondProfile
+user={user}
+onClose={() => setSecondProfileOpen(false)}
+/>
+)}
 {editProfileOpen && (
 <EditProfile
 user={user}
