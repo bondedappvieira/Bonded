@@ -2784,6 +2784,32 @@ const [chatRecipient, setChatRecipient] = React.useState("");
   const [gdprAccepted, setGdprAccepted] = useState(false);
   const [couples, setCouples] = useState([]);
   useEffect(() => {
+const handlePrint = (e) => {
+if (e.key === "PrintScreen") {
+navigator.clipboard.writeText("");
+alert("Screenshots sao proibidos no Bonded! 🔒");
+}
+};
+const handleVisibility = () => {
+if (document.visibilityState === "hidden") {
+document.querySelectorAll("video, img").forEach(el => {
+el.style.filter = "blur(20px)";
+});
+} else {
+document.querySelectorAll("video, img").forEach(el => {
+el.style.filter = "none";
+});
+}
+};
+document.addEventListener("keyup", handlePrint);
+document.addEventListener("visibilitychange", handleVisibility);
+document.addEventListener("contextmenu", e => e.preventDefault());
+return () => {
+document.removeEventListener("keyup", handlePrint);
+document.removeEventListener("visibilitychange", handleVisibility);
+};
+}, []);
+  useEffect(() => {
 const checkTime = () => setDarkMode(isNightTime());
 const interval = setInterval(checkTime, 60000);
 return () => clearInterval(interval);
