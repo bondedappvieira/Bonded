@@ -2168,6 +2168,28 @@ style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c4606a,#e080
 );
 }
 
+function InvisibleView({enabled, user, targetEmail}) {
+React.useEffect(() => {
+if (!enabled || !user || !targetEmail) return;
+const registerView = async () => {
+const q = query(collection(db, "views"),
+where("viewer", "==", user.email),
+where("target", "==", targetEmail)
+);
+const snapshot = await getDocs(q);
+if (snapshot.empty) {
+await addDoc(collection(db, "views"), {
+viewer: user.email,
+target: targetEmail,
+invisible: true,
+createdAt: new Date().toISOString(),
+});
+}
+};
+registerView();
+}, [enabled, user, targetEmail]);
+return null;
+}
 function FollowButton({user, targetEmail}) {
 const [following, setFollowing] = React.useState(false);
 const [loading, setLoading] = React.useState(false);
@@ -2216,6 +2238,73 @@ setFollowing(true);
 }
 } catch(e) {
 console.error(e);
+}
+setLoading(false);
+};
+
+if (!user || user.email === targetEmail) return null;
+
+return (
+<button onClick={handleFollow} disabled={loading} style={{
+padding:"8px 20px",
+background: following ? "transparent" : "linear-gradient(135deg,#c9963a,#e8b96a)",
+color: following ? "#c9963a" : "white",
+border: following ? "1px solid #c9963a" : "none",
+borderRadius:20,
+cursor:"pointer",
+fontWeight:700,
+fontSize:13,
+}}>
+{loading ? "..." : following ? "✓ A seguir" : "+ Seguir"}
+</button>
+);
+}
+
+function FollowButton({user, targetEmail}) {
+const [following, setFollowing] = React.useState(false);
+const [loading, setLoading] = React.useState(false);
+
+React.useEffect(() => {
+if (!user) return;
+const checkFollow = async () => {
+const q = query(collection(db, "follows"),
+where("follower", "==", user.email),
+where("following", "==", targetEmail));
+const snapshot = await getDocs(q);
+setFollowing(!snapshot.empty);
+};
+checkFollow();
+}, [user, targetEmail]);
+
+const handleFollow = async () => {
+if (!user) return;
+setLoading(true);
+try {
+if (following) {
+const q = query(collection(db, "follows"),
+where("follower", "==", user.email),
+where("following", "==", targetEmail));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+await updateDoc(doc(db, "follows", snapshot.docs[0].id), {deleted: true});
+}
+setFollowing(false);
+} else {
+await addDoc(collection(db, "follows"), {
+follower: user.email,
+following: targetEmail,
+createdAt: new Date().toISOString(),
+});
+await addDoc(collection(db, "notifications"), {
+to: targetEmail,
+message: `${user.email} começou a seguir-te!`,
+read: false,
+createdAt: new Date().toISOString(),
+});
+setFollowing(true);
+}
+} catch(e) {
+alert("Erro ao seguir!");
 }
 setLoading(false);
 };
@@ -2771,6 +2860,7 @@ const [showNotifications, setShowNotifications] = React.useState(false);
 const [giftTarget, setGiftTarget] = React.useState("");
 const [secretMsgOpen, setSecretMsgOpen] = React.useState(false);
 const [secretMsgRecipient, setSecretMsgRecipient] = React.useState("");
+const [invisibleMode, setInvisibleMode] = React.useState(false);
 
 const [bondPulsePartner, setBondPulsePartner] = React.useState("");
 
