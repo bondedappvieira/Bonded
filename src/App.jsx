@@ -1891,6 +1891,115 @@ reader.readAsDataURL(file);
 </div>
 );
 }
+function BondCoins({user, onClose}) {
+const [coins, setCoins] = React.useState(0);
+const [sendTo, setSendTo] = React.useState("");
+const [sendAmount, setSendAmount] = React.useState(100);
+const [loading, setLoading] = React.useState(false);
+
+React.useEffect(() => {
+if (!user) return;
+const loadCoins = async () => {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) setCoins(snapshot.docs[0].data().bondCoins || 0);
+};
+loadCoins();
+}, [user]);
+
+const buyCoins = async (amount, price) => {
+setLoading(true);
+try {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+const newCoins = coins + amount;
+await updateDoc(doc(db, "users", snapshot.docs[0].id), {bondCoins: newCoins});
+setCoins(newCoins);
+alert(`${amount} BondCoins adicionados! Total: ${newCoins} coins`);
+}
+} catch(e) { alert("Erro ao comprar coins!"); }
+setLoading(false);
+};
+
+const sendCoins = async () => {
+if (!sendTo.trim()) { alert("Introduz o email do destinatario!"); return; }
+if (sendAmount > coins) { alert("Nao tens coins suficientes!"); return; }
+setLoading(true);
+try {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+await updateDoc(doc(db, "users", snapshot.docs[0].id), {bondCoins: coins - sendAmount});
+setCoins(coins - sendAmount);
+}
+const q2 = query(collection(db, "users"), where("email", "==", sendTo));
+const snapshot2 = await getDocs(q2);
+if (!snapshot2.empty) {
+const receiverCoins = snapshot2.docs[0].data().bondCoins || 0;
+await updateDoc(doc(db, "users", snapshot2.docs[0].id), {bondCoins: receiverCoins + sendAmount});
+}
+await addDoc(collection(db, "notifications"), {
+to: sendTo,
+message: `Recebeste ${sendAmount} BondCoins de ${user.email}! A conversa foi aberta automaticamente.`,
+read: false,
+createdAt: new Date().toISOString(),
+});
+alert(`${sendAmount} BondCoins enviados para ${sendTo}!`);
+setSendTo("");
+} catch(e) { alert("Erro ao enviar coins!"); }
+setLoading(false);
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24,maxHeight:"90vh",overflowY:"auto"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#c9963a",marginBottom:4}}>💰 BondCoins</h2>
+<div style={{textAlign:"center",padding:"16px 0",marginBottom:16,background:"linear-gradient(135deg,#c9963a,#e8b96a)",borderRadius:12,color:"white"}}>
+<div style={{fontSize:36,fontWeight:700}}>{coins}</div>
+<div style={{fontSize:13,opacity:0.9}}>BondCoins disponíveis</div>
+</div>
+
+<h3 style={{color:"#4a3828",marginBottom:12}}>Comprar BondCoins</h3>
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20}}>
+{[
+{amount:100, price:"0,99 EUR"},
+{amount:500, price:"3,99 EUR"},
+{amount:1000, price:"6,99 EUR"},
+{amount:5000, price:"24,99 EUR"},
+].map(({amount, price}) => (
+<button key={amount} onClick={() => buyCoins(amount, price)} disabled={loading}
+style={{padding:12,background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700}}>
+<div style={{fontSize:18}}>{amount} coins</div>
+<div style={{fontSize:12,opacity:0.9}}>{price}</div>
+</button>
+))}
+</div>
+
+<h3 style={{color:"#4a3828",marginBottom:12}}>Enviar BondCoins</h3>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:8}}>Ao enviar BondCoins a conversa abre automaticamente!</p>
+<input value={sendTo} onChange={e => setSendTo(e.target.value)}
+placeholder="Email do destinatario..."
+style={{width:"100%",padding:"10px 14px",borderRadius:8,border:"1px solid rgba(201,150,58,0.3)",fontSize:13,marginBottom:8}}/>
+<div style={{display:"flex",gap:8,marginBottom:12}}>
+{[100, 500, 1000].map(a => (
+<button key={a} onClick={() => setSendAmount(a)}
+style={{flex:1,padding:8,background:sendAmount===a?"linear-gradient(135deg,#c9963a,#e8b96a)":"transparent",
+color:sendAmount===a?"white":"#c9963a",border:"1px solid #c9963a",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13}}>
+{a}
+</button>
+))}
+</div>
+<button onClick={sendCoins} disabled={loading || !sendTo}
+style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c4606a,#e08090)",color:"white",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:14}}>
+{loading ? "A enviar..." : `💰 Enviar ${sendAmount} BondCoins`}
+</button>
+</div>
+</div>
+);
+}
+
 function FollowButton({user, targetEmail}) {
 const [following, setFollowing] = React.useState(false);
 const [loading, setLoading] = React.useState(false);
@@ -2489,6 +2598,7 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [secondProfileOpen, setSecondProfileOpen] = React.useState(false);
   const [verificationOpen, setVerificationOpen] = React.useState(false);
   const [bondPulseOpen, setBondPulseOpen] = React.useState(false);
+  const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
 const [bondPulsePartner, setBondPulsePartner] = React.useState("");
 
 
@@ -2966,7 +3076,12 @@ await updateDoc(doc(db, "users", snapshot.docs[0].id), {ghostMode: newGhostMode}
 🎭 Perfil Privado
 </button>
 {user && (
-<button onClick={() => setVerificationOpen(true)} style={{...btn(false), marginBottom:8}}>
+{user && (
+<button onClick={() => setBondCoinsOpen(true)} style={{...btn(false), marginBottom:8}}>
+💰 BondCoins
+</button>
+)}
+  <button onClick={() => setVerificationOpen(true)} style={{...btn(false), marginBottom:8}}>
 ✅ Pedir Verificacao
 </button>
 )}
@@ -4074,6 +4189,12 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{bondCoinsOpen && (
+<BondCoins
+user={user}
+onClose={() => setBondCoinsOpen(false)}
+/>
+)}
 {bondPulseOpen && (
 <BondPulse
 user={user}
