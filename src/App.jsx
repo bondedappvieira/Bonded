@@ -4366,6 +4366,8 @@ fontWeight: 700,
 
 💬 Enviar mensagem
 </button>
+<FollowButton user={user} targetEmail={profileEmail} />
+
 )}
 </button>
 )}
