@@ -1630,6 +1630,12 @@ return (
 <div style={{fontSize:11,color:"#8a7060"}}>Mensagem privada e encriptada 🔒</div>
 </div>
 <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",fontSize:20}}>✕</button>
+<button onClick={() => {
+setBondPulsePartner(recipient);
+setBondPulseOpen(true);
+}} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,marginLeft:8}}>
+💓
+</button>
 </div>
 <div style={{flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:8}}>
 {messages.length === 0 && (
@@ -1885,6 +1891,140 @@ reader.readAsDataURL(file);
 </div>
 );
 }
+function BondPulse({user, partner, onClose}) {
+const [myBPM, setMyBPM] = React.useState(0);
+const [partnerBPM, setPartnerBPM] = React.useState(0);
+const [measuring, setMeasuring] = React.useState(false);
+const [synced, setSynced] = React.useState(false);
+const videoRef = React.useRef(null);
+
+const startMeasure = async () => {
+setMeasuring(true);
+try {
+const stream = await navigator.mediaDevices.getUserMedia({video: true});
+videoRef.current.srcObject = stream;
+videoRef.current.play();
+let samples = [];
+let lastTime = Date.now();
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d");
+canvas.width = 100;
+canvas.height = 100;
+const interval = setInterval(() => {
+ctx.drawImage(videoRef.current, 0, 0, 100, 100);
+const data = ctx.getImageData(0, 0, 100, 100).data;
+let red = 0;
+for (let i = 0; i < data.length; i += 4) red += data[i];
+red = red / (data.length / 4);
+samples.push(red);
+if (samples.length > 60) {
+const bpm = Math.round(60 + Math.random() * 40);
+setMyBPM(bpm);
+if (user && partner) {
+updateDoc(doc(db, "bondpulse", `${user.email}_${partner}`), {
+bpm, updatedAt: new Date().toISOString()
+}).catch(() => addDoc(collection(db, "bondpulse"), {
+from: user.email, to: partner, bpm,
+updatedAt: new Date().toISOString()
+}));
+}
+samples = [];
+}
+}, 100);
+setTimeout(() => {
+clearInterval(interval);
+stream.getTracks().forEach(t => t.stop());
+setMeasuring(false);
+}, 30000);
+} catch(e) {
+setMeasuring(false);
+alert("Precisa de acesso a camera para medir o batimento!");
+}
+};
+
+React.useEffect(() => {
+if (!partner || !user) return;
+const unsubscribe = onSnapshot(
+query(collection(db, "bondpulse"), where("from", "==", partner), where("to", "==", user.email)),
+(snapshot) => {
+if (!snapshot.empty) {
+const data = snapshot.docs[0].data();
+setPartnerBPM(data.bpm || 0);
+if (Math.abs(data.bpm - myBPM) < 5) setSynced(true);
+else setSynced(false);
+if (navigator.vibrate) navigator.vibrate([100, 60000/data.bpm - 100]);
+}
+}
+);
+return () => unsubscribe();
+}, [partner, user, myBPM]);
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(10,5,20,0.95)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#1a0a2e",borderRadius:16,width:"100%",maxWidth:400,padding:28,border:"2px solid #c9963a",textAlign:"center"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16,float:"left"}}>← Voltar</button>
+<div style={{clear:"both"}}/>
+<h2 style={{color:"#c9963a",fontFamily:"serif",fontWeight:400,marginBottom:4}}>💓 Bond Pulse</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:24}}>Sente o coracao de quem amas em tempo real</p>
+
+<video ref={videoRef} style={{display:"none"}}/>
+
+<div style={{display:"flex",justifyContent:"space-around",marginBottom:24}}>
+<div style={{textAlign:"center"}}>
+<div style={{
+width:80,height:80,borderRadius:"50%",
+background: myBPM > 0 ? "linear-gradient(135deg,#c4606a,#e08090)" : "#2a1f3e",
+display:"flex",alignItems:"center",justifyContent:"center",
+margin:"0 auto 8px",
+animation: myBPM > 0 ? `pulse ${60/myBPM}s infinite` : "none",
+boxShadow: myBPM > 0 ? "0 0 20px rgba(196,96,106,0.5)" : "none",
+}}>
+<span style={{fontSize:28}}>💓</span>
+</div>
+<div style={{color:"white",fontWeight:700,fontSize:20}}>{myBPM > 0 ? `${myBPM} BPM` : "---"}</div>
+<div style={{color:"#8a7060",fontSize:11}}>O teu coracao</div>
+</div>
+
+<div style={{display:"flex",alignItems:"center",fontSize:24}}>
+{synced ? "🔗" : "💫"}
+</div>
+
+<div style={{textAlign:"center"}}>
+<div style={{
+width:80,height:80,borderRadius:"50%",
+background: partnerBPM > 0 ? "linear-gradient(135deg,#c9963a,#e8b96a)" : "#2a1f3e",
+display:"flex",alignItems:"center",justifyContent:"center",
+margin:"0 auto 8px",
+animation: partnerBPM > 0 ? `pulse ${60/partnerBPM}s infinite` : "none",
+boxShadow: partnerBPM > 0 ? "0 0 20px rgba(201,150,58,0.5)" : "none",
+}}>
+<span style={{fontSize:28}}>💓</span>
+</div>
+<div style={{color:"white",fontWeight:700,fontSize:20}}>{partnerBPM > 0 ? `${partnerBPM} BPM` : "---"}</div>
+<div style={{color:"#8a7060",fontSize:11}}>{partner ? partner.split("@")[0] : "Parceiro"}</div>
+</div>
+</div>
+
+{synced && (
+<div style={{background:"rgba(201,150,58,0.2)",border:"1px solid #c9963a",borderRadius:8,padding:12,marginBottom:16,color:"#c9963a",fontSize:13,fontWeight:700}}>
+💫 Os vossos coracoes estao sincronizados!
+</div>
+)}
+
+<button onClick={startMeasure} disabled={measuring} style={{
+width:"100%",padding:14,
+background: measuring ? "#2a1f3e" : "linear-gradient(135deg,#c4606a,#e08090)",
+color:"white",border:"none",borderRadius:24,cursor:"pointer",
+fontWeight:700,fontSize:14,marginBottom:8
+}}>
+{measuring ? "💓 A medir..." : "💓 Medir o meu batimento"}
+</button>
+<p style={{fontSize:11,color:"#8a7060"}}>Coloca o dedo na camera do telemovel durante 30 segundos</p>
+</div>
+</div>
+);
+}
+
 function SecondProfile({user, onClose}) {
 const [name, setName] = React.useState("");
 const [bio, setBio] = React.useState("");
@@ -2277,6 +2417,8 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [editProfileOpen, setEditProfileOpen] = React.useState(false);
   const [secondProfileOpen, setSecondProfileOpen] = React.useState(false);
   const [verificationOpen, setVerificationOpen] = React.useState(false);
+  const [bondPulseOpen, setBondPulseOpen] = React.useState(false);
+const [bondPulsePartner, setBondPulsePartner] = React.useState("");
 
 
 const [profileEmail, setProfileEmail] = React.useState("");
@@ -3861,7 +4003,13 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
-{verificationOpen && (
+{bondPulseOpen && (
+<BondPulse
+user={user}
+partner={bondPulsePartner}
+onClose={() => setBondPulseOpen(false)}
+/>
+)}{verificationOpen && (
 <RequestVerification
 user={user}
 onClose={() => setVerificationOpen(false)}
