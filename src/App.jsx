@@ -3289,7 +3289,23 @@ await updateDoc(doc(db, "users", snapshot.docs[0].id), {ghostMode: newGhostMode}
 <button onClick={async () => {
 if (window.confirm("Tens a certeza que queres eliminar a tua conta? Esta acao e irreversivel e apaga todos os teus dados!")) {
 try {
-await user.delete();
+const chatsQ = query(collection(db, "chats"));
+const chatsSnap = await getDocs(chatsQ);
+for (const chatDoc of chatsSnap.docs) {
+if (chatDoc.id.includes(user.email)) {
+const msgsQ = query(collection(db, "chats", chatDoc.id, "messages"));
+const msgsSnap = await getDocs(msgsQ);
+for (const msgDoc of msgsSnap.docs) {
+await updateDoc(doc(db, "chats", chatDoc.id, "messages", msgDoc.id), {deleted: true, text: "Mensagem apagada"});
+}
+}
+}
+const postsQ = query(collection(db, "posts"), where("author", "==", user.email));
+const postsSnap = await getDocs(postsQ);
+for (const postDoc of postsSnap.docs) {
+await updateDoc(doc(db, "posts", postDoc.id), {deleted: true});
+}
+  await user.delete();
 setUser(null);
 setIsPremium(false);
 setCouples([]);
