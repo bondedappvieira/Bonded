@@ -1891,6 +1891,103 @@ reader.readAsDataURL(file);
 </div>
 );
 }
+function GiftShop({user, targetEmail, onClose}) {
+const [loading, setLoading] = React.useState(false);
+const [sent, setSent] = React.useState(null);
+const [mode, setMode] = React.useState("named");
+
+const gifts = [
+{id:"rose", emoji:"🌹", name:"Rosa", price:"0,99 EUR", desc:"Uma rosa digital no perfil"},
+{id:"star", emoji:"⭐", name:"Estrela", price:"1,99 EUR", desc:"Estrela especial temporaria"},
+{id:"crown", emoji:"👑", name:"Coroa", price:"2,99 EUR", desc:"Coroa dourada 1 semana"},
+{id:"diamond", emoji:"💎", name:"Diamante", price:"4,99 EUR", desc:"Diamante no perfil 1 mes"},
+];
+
+const sendGift = async (gift) => {
+setLoading(true);
+try {
+await addDoc(collection(db, "gifts"), {
+from: mode === "anonymous" ? "anonimo" : user.email,
+fromReal: user.email,
+to: targetEmail,
+gift: gift.id,
+emoji: gift.emoji,
+giftName: gift.name,
+mode,
+createdAt: new Date().toISOString(),
+revealed: false,
+});
+await addDoc(collection(db, "notifications"), {
+to: targetEmail,
+message: mode === "anonymous"
+? `Recebeste um presente anonimo: ${gift.emoji} ${gift.name}!`
+: `${user.email} enviou-te um presente: ${gift.emoji} ${gift.name}!`,
+read: false,
+createdAt: new Date().toISOString(),
+});
+setSent(gift);
+} catch(e) { alert("Erro ao enviar presente!"); }
+setLoading(false);
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#c9963a",marginBottom:4}}>🎁 Enviar Presente</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:16}}>Para: {targetEmail}</p>
+
+{sent ? (
+<div style={{textAlign:"center",padding:32}}>
+<div style={{fontSize:64,marginBottom:12}}>{sent.emoji}</div>
+<div style={{fontWeight:700,color:"#1a1209",marginBottom:8}}>Presente enviado!</div>
+<div style={{fontSize:13,color:"#8a7060"}}>
+{mode === "anonymous" ? "O destinatario nao sabe quem enviou!" : `Enviaste ${sent.name} com o teu nome!`}
+</div>
+</div>
+) : (
+<>
+<div style={{marginBottom:16}}>
+<div style={{fontSize:12,color:"#8a7060",marginBottom:8}}>Modo de envio:</div>
+<div style={{display:"flex",gap:8}}>
+{[
+{id:"named", label:"Com nome", price:"+0 EUR"},
+{id:"anonymous", label:"Anonimo", price:"+3 EUR"},
+{id:"delayed", label:"Revelacao", price:"+2 EUR"},
+].map(m => (
+<button key={m.id} onClick={() => setMode(m.id)} style={{
+flex:1, padding:"8px 4px",
+background: mode===m.id ? "linear-gradient(135deg,#c9963a,#e8b96a)" : "transparent",
+color: mode===m.id ? "white" : "#c9963a",
+border:"1px solid #c9963a", borderRadius:8,
+cursor:"pointer", fontSize:11, fontWeight:700,
+}}>
+<div>{m.label}</div>
+<div style={{opacity:0.8}}>{m.price}</div>
+</button>
+))}
+</div>
+</div>
+
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+{gifts.map(gift => (
+<button key={gift.id} onClick={() => sendGift(gift)} disabled={loading}
+style={{padding:16,background:"white",border:"2px solid rgba(201,150,58,0.2)",
+borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
+<div style={{fontSize:36,marginBottom:6}}>{gift.emoji}</div>
+<div style={{fontWeight:700,color:"#1a1209",fontSize:13}}>{gift.name}</div>
+<div style={{fontSize:11,color:"#8a7060",marginBottom:6}}>{gift.desc}</div>
+<div style={{fontWeight:700,color:"#c9963a",fontSize:13}}>{gift.price}</div>
+</button>
+))}
+</div>
+</>
+)}
+</div>
+</div>
+);
+}
+
 function BondCoins({user, onClose}) {
 const [coins, setCoins] = React.useState(0);
 const [sendTo, setSendTo] = React.useState("");
@@ -2599,6 +2696,8 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [verificationOpen, setVerificationOpen] = React.useState(false);
   const [bondPulseOpen, setBondPulseOpen] = React.useState(false);
   const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
+  const [giftOpen, setGiftOpen] = React.useState(false);
+const [giftTarget, setGiftTarget] = React.useState("");
 const [bondPulsePartner, setBondPulsePartner] = React.useState("");
 
 
@@ -4010,7 +4109,9 @@ alert("Publicado!");
                     </>
                     {user && (
 <button onClick={() => {
-alert("Funcionalidade de presente em breve!");
+setGiftTarget(profileEmail);
+setGiftOpen(true);
+
 }} style={{
 marginTop: 12,
 padding: "8px 16px",
@@ -4189,6 +4290,13 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{giftOpen && giftTarget && (
+<GiftShop
+user={user}
+targetEmail={giftTarget}
+onClose={() => setGiftOpen(false)}
+/>
+)}
 {bondCoinsOpen && (
 <BondCoins
 user={user}
