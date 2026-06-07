@@ -1891,6 +1891,76 @@ reader.readAsDataURL(file);
 </div>
 );
 }
+function FollowButton({user, targetEmail}) {
+const [following, setFollowing] = React.useState(false);
+const [loading, setLoading] = React.useState(false);
+
+React.useEffect(() => {
+if (!user) return;
+const checkFollow = async () => {
+const q = query(collection(db, "follows"),
+where("follower", "==", user.email),
+where("following", "==", targetEmail)
+);
+const snapshot = await getDocs(q);
+setFollowing(!snapshot.empty);
+};
+checkFollow();
+}, [user, targetEmail]);
+
+const handleFollow = async () => {
+if (!user) return;
+setLoading(true);
+try {
+if (following) {
+const q = query(collection(db, "follows"),
+where("follower", "==", user.email),
+where("following", "==", targetEmail)
+);
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+await updateDoc(doc(db, "follows", snapshot.docs[0].id), {deleted: true});
+}
+setFollowing(false);
+} else {
+await addDoc(collection(db, "follows"), {
+follower: user.email,
+following: targetEmail,
+createdAt: new Date().toISOString(),
+deleted: false,
+});
+await addDoc(collection(db, "notifications"), {
+to: targetEmail,
+message: `${user.email} começou a seguir-te!`,
+read: false,
+createdAt: new Date().toISOString(),
+});
+setFollowing(true);
+}
+} catch(e) {
+console.error(e);
+}
+setLoading(false);
+};
+
+if (!user || user.email === targetEmail) return null;
+
+return (
+<button onClick={handleFollow} disabled={loading} style={{
+padding:"8px 20px",
+background: following ? "transparent" : "linear-gradient(135deg,#c9963a,#e8b96a)",
+color: following ? "#c9963a" : "white",
+border: following ? "1px solid #c9963a" : "none",
+borderRadius:20,
+cursor:"pointer",
+fontWeight:700,
+fontSize:13,
+}}>
+{loading ? "..." : following ? "✓ A seguir" : "+ Seguir"}
+</button>
+);
+}
+
 function BondPulse({user, partner, onClose}) {
 const [myBPM, setMyBPM] = React.useState(0);
 const [partnerBPM, setPartnerBPM] = React.useState(0);
@@ -2279,6 +2349,7 @@ style={{flex:1,padding:"10px 16px",borderRadius:24,border:"1px solid rgba(201,15
 <button onClick={() => onChat(profile.email)} style={{padding:"6px 12px",background:"linear-gradient(135deg,#c4606a,#e08090)",color:"white",border:"none",borderRadius:16,cursor:"pointer",fontSize:11}}>
 💬
 </button>
+<FollowButton user={user} targetEmail={profileEmail} />
 </div>
 </div>
 ))}
