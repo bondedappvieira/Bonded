@@ -2059,6 +2059,85 @@ borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
 );
 }
 
+function GiftModal({user, recipientEmail, onClose}) {
+const [selected, setSelected] = React.useState(null);
+const [anonymous, setAnonymous] = React.useState(false);
+const [loading, setLoading] = React.useState(false);
+
+const gifts = [
+{id:"rose", emoji:"🌹", name:"Rose", price:"0,99 EUR", coins:100},
+{id:"star", emoji:"⭐", name:"Star", price:"1,99 EUR", coins:200},
+{id:"crown", emoji:"👑", name:"Crown", price:"2,99 EUR", coins:300},
+{id:"diamond", emoji:"💎", name:"Diamond", price:"4,99 EUR", coins:500},
+];
+
+const handleSend = async () => {
+if (!selected) { alert("Escolhe um presente!"); return; }
+setLoading(true);
+try {
+await addDoc(collection(db, "gifts"), {
+from: anonymous ? "anonimo" : user.email,
+to: recipientEmail,
+gift: selected,
+anonymous,
+createdAt: new Date().toISOString(),
+seen: false,
+});
+await addDoc(collection(db, "notifications"), {
+to: recipientEmail,
+message: anonymous ? "Recebeste um presente anonimo!" : `${user.email} enviou-te um presente!`,
+read: false,
+createdAt: new Date().toISOString(),
+});
+alert("Presente enviado com sucesso!");
+onClose();
+} catch(e) {
+alert("Erro ao enviar presente!");
+}
+setLoading(false);
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:450,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#1a1209",marginBottom:4}}>🎁 Enviar Presente</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:20}}>Para: {recipientEmail}</p>
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+{gifts.map(gift => (
+<div key={gift.id} onClick={() => setSelected(gift.id)} style={{
+padding:16,
+borderRadius:12,
+border: selected === gift.id ? "2px solid #c9963a" : "1px solid rgba(201,150,58,0.3)",
+background: selected === gift.id ? "rgba(201,150,58,0.1)" : "white",
+cursor:"pointer",
+textAlign:"center",
+}}>
+<div style={{fontSize:32,marginBottom:6}}>{gift.emoji}</div>
+<div style={{fontWeight:700,fontSize:13,color:"#1a1209"}}>{gift.name}</div>
+<div style={{fontSize:12,color:"#c9963a",fontWeight:700}}>{gift.price}</div>
+</div>
+))}
+</div>
+<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20,padding:12,background:"rgba(201,150,58,0.05)",borderRadius:8}}>
+<input type="checkbox" id="anonymous" checked={anonymous} onChange={e => setAnonymous(e.target.checked)}/>
+<label htmlFor="anonymous" style={{fontSize:13,color:"#4a3828",cursor:"pointer"}}>
+🎭 Enviar anonimamente (+3,00 EUR)
+</label>
+</div>
+<button onClick={handleSend} disabled={loading} style={{
+width:"100%",padding:14,
+background:"linear-gradient(135deg,#c9963a,#e8b96a)",
+color:"white",border:"none",borderRadius:8,
+cursor:"pointer",fontWeight:700,fontSize:14
+}}>
+{loading ? "A enviar..." : "🎁 Enviar Presente"}
+</button>
+</div>
+</div>
+);
+}
+
 function BondCoins({user, onClose}) {
 const [coins, setCoins] = React.useState(0);
 const [sendTo, setSendTo] = React.useState("");
@@ -2916,6 +2995,8 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [verificationOpen, setVerificationOpen] = React.useState(false);
   const [bondPulseOpen, setBondPulseOpen] = React.useState(false);
   const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
+  const [giftOpen, setGiftOpen] = React.useState(false);
+const [giftRecipient, setGiftRecipient] = React.useState("");
   const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
   const [giftOpen, setGiftOpen] = React.useState(false);
 const [giftTarget, setGiftTarget] = React.useState("");
@@ -4570,6 +4651,13 @@ onClose={() => setSecretMsgOpen(false)}
 <GiftShop
 user={user}
 targetEmail={giftTarget}
+onClose={() => setGiftOpen(false)}
+/>
+)}
+{giftOpen && giftRecipient && (
+<GiftModal
+user={user}
+recipientEmail={giftRecipient}
 onClose={() => setGiftOpen(false)}
 />
 )}
