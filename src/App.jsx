@@ -2089,6 +2089,32 @@ borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
 );
 }
 
+function InvisibleView({children, user, targetEmail}) {
+const markAsViewed = async () => {
+if (!user || user.email === targetEmail) return;
+try {
+const q = query(collection(db, "invisibleViews"),
+where("viewer", "==", user.email),
+where("target", "==", targetEmail));
+const snapshot = await getDocs(q);
+if (snapshot.empty) {
+await addDoc(collection(db, "invisibleViews"), {
+viewer: user.email,
+target: targetEmail,
+viewedAt: new Date().toISOString(),
+});
+}
+} catch(e) {
+console.error(e);
+}
+};
+
+React.useEffect(() => {
+markAsViewed();
+}, [targetEmail]);
+
+return <>{children}</>;
+}
 function PrivateVault({user, onClose}) {
 const [pin, setPin] = React.useState("");
 const [confirmPin, setConfirmPin] = React.useState("");
@@ -3136,6 +3162,8 @@ loadPosts();
 }, [profileEmail]);
 
 return (
+<InvisibleView user={user} targetEmail={profileEmail}>
+
 <div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:350,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
 <div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24}}>
 <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
