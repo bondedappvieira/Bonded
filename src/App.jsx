@@ -2065,6 +2065,164 @@ borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
 );
 }
 
+function PrivateVault({user, onClose}) {
+const [pin, setPin] = React.useState("");
+const [confirmPin, setConfirmPin] = React.useState("");
+const [unlocked, setUnlocked] = React.useState(false);
+const [hasPin, setHasPin] = React.useState(false);
+const [photos, setPhotos] = React.useState([]);
+const [notes, setNotes] = React.useState([]);
+const [newNote, setNewNote] = React.useState("");
+const [loading, setLoading] = React.useState(false);
+const [attempts, setAttempts] = React.useState(0);
+
+React.useEffect(() => {
+const checkPin = async () => {
+const q = query(collection(db, "vaults"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty && snapshot.docs[0].data().pin) setHasPin(true);
+};
+checkPin();
+}, [user]);
+
+const handleUnlock = async () => {
+if (attempts >= 3) {
+alert("Muitas tentativas! Cofre bloqueado por seguranca.");
+onClose();
+return;
+}
+setLoading(true);
+try {
+const q = query(collection(db, "vaults"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+const vaultData = snapshot.docs[0].data();
+if (btoa(pin) === vaultData.pin) {
+setUnlocked(true);
+setPhotos(vaultData.photos || []);
+setNotes(vaultData.notes || []);
+} else {
+setAttempts(attempts + 1);
+alert(`PIN incorreto! Tentativas restantes: ${2 - attempts}`);
+}
+}
+} catch(e) {
+alert("Erro ao aceder ao cofre!");
+}
+setLoading(false);
+};
+
+const handleCreatePin = async () => {
+if (pin.length < 4) { alert("PIN deve ter pelo menos 4 digitos!"); return; }
+if (pin !== confirmPin) { alert("PINs nao coincidem!"); return; }
+setLoading(true);
+try {
+await addDoc(collection(db, "vaults"), {
+email: user.email,
+pin: btoa(pin),
+photos: [],
+notes: [],
+createdAt: new Date().toISOString()
+});
+setHasPin(true);
+setUnlocked(true);
+} catch(e) {
+alert("Erro ao criar cofre!");
+}
+setLoading(false);
+};
+
+const addPhoto = () => {
+const input = document.createElement("input");
+input.type = "file";
+input.accept = "image/*";
+input.onchange = async (e) => {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = async (ev) => {
+const newPhotos = [...photos, {id: Date.now(), data: ev.target.result}];
+setPhotos(newPhotos);
+const q = query(collection(db, "vaults"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) await updateDoc(doc(db, "vaults", snapshot.docs[0].id), {photos: newPhotos});
+};
+reader.readAsDataURL(file);
+};
+input.click();
+};
+
+const addNote = async () => {
+if (!newNote.trim()) return;
+const newNotes = [...notes, {id: Date.now(), text: btoa(unescape(encodeURIComponent(newNote))), createdAt: new Date().toISOString()}];
+setNotes(newNotes);
+setNewNote("");
+const q = query(collection(db, "vaults"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) await updateDoc(doc(db, "vaults", snapshot.docs[0].id), {notes: newNotes});
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(10,5,20,0.97)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#0a0514",borderRadius:16,width:"100%",maxWidth:480,padding:24,border:"2px solid #c9963a",maxHeight:"90vh",overflowY:"auto"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Sair do Cofre</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#c9963a",marginBottom:4,textAlign:"center"}}>🔐 Cofre Privado</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:20,textAlign:"center"}}>Encriptado — so tu tens acesso</p>
+
+{!hasPin && (
+<div>
+<p style={{color:"#fdf6ee",fontSize:13,marginBottom:16,textAlign:"center"}}>Cria o teu PIN secreto para proteger o cofre</p>
+<input type="password" placeholder="Cria um PIN (minimo 4 digitos)" value={pin} onChange={e => setPin(e.target.value)} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid #c9963a",background:"#1a0a2e",color:"#fdf6ee",fontSize:13,marginBottom:8}}/>
+<input type="password" placeholder="Confirma o PIN" value={confirmPin} onChange={e => setConfirmPin(e.target.value)} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid #c9963a",background:"#1a0a2e",color:"#fdf6ee",fontSize:13,marginBottom:16}}/>
+<button onClick={handleCreatePin} disabled={loading} style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"#0a0514",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700}}>
+{loading ? "A criar..." : "🔐 Criar Cofre"}
+</button>
+</div>
+)}
+
+{hasPin && !unlocked && (
+<div>
+<p style={{color:"#fdf6ee",fontSize:13,marginBottom:16,textAlign:"center"}}>Introduz o teu PIN para abrir o cofre</p>
+<input type="password" placeholder="PIN secreto" value={pin} onChange={e => setPin(e.target.value)} onKeyDown={e => e.key === "Enter" && handleUnlock()} style={{width:"100%",padding:12,borderRadius:8,border:"1px solid #c9963a",background:"#1a0a2e",color:"#fdf6ee",fontSize:13,marginBottom:16,textAlign:"center",letterSpacing:8}}/>
+<button onClick={handleUnlock} disabled={loading} style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"#0a0514",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700}}>
+{loading ? "A verificar..." : "🔓 Abrir Cofre"}
+</button>
+<p style={{fontSize:11,color:"#c4606a",marginTop:8,textAlign:"center"}}>Apos 3 tentativas erradas o cofre bloqueia</p>
+</div>
+)}
+
+{unlocked && (
+<div>
+<div style={{display:"flex",gap:8,marginBottom:16}}>
+<button onClick={addPhoto} style={{flex:1,padding:10,background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"#0a0514",border:"none",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13}}>
+📸 Adicionar Foto
+</button>
+</div>
+{photos.length > 0 && (
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
+{photos.map(photo => (
+<img key={photo.id} src={photo.data} style={{width:"100%",aspectRatio:"1",objectFit:"cover",borderRadius:8,border:"1px solid #c9963a"}}/>
+))}
+</div>
+)}
+<div style={{marginBottom:16}}>
+<textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Escreve uma nota secreta..." style={{width:"100%",padding:12,borderRadius:8,border:"1px solid #c9963a",background:"#1a0a2e",color:"#fdf6ee",fontSize:13,minHeight:80,resize:"none"}}/>
+<button onClick={addNote} style={{width:"100%",marginTop:8,padding:10,background:"rgba(201,150,58,0.2)",color:"#c9963a",border:"1px solid #c9963a",borderRadius:8,cursor:"pointer",fontWeight:700}}>
++ Guardar Nota
+</button>
+</div>
+{notes.map(note => (
+<div key={note.id} style={{padding:12,background:"#1a0a2e",borderRadius:8,marginBottom:8,fontSize:13,color:"#fdf6ee",border:"1px solid rgba(201,150,58,0.2)"}}>
+{decodeURIComponent(escape(atob(note.text)))}
+</div>
+))}
+</div>
+)}
+</div>
+</div>
+);
+}
+
 function SecretMessage({user, recipient, onClose}) {
 const [text, setText] = React.useState("");
 const [loading, setLoading] = React.useState(false);
@@ -3067,6 +3225,8 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
   const [giftOpen, setGiftOpen] = React.useState(false);
   const [secretMsgOpen, setSecretMsgOpen] = React.useState(false);
+  const [vaultOpen, setVaultOpen] = React.useState(false);
+
 const [secretMsgRecipient, setSecretMsgRecipient] = React.useState("");
 
 const [giftRecipient, setGiftRecipient] = React.useState("");
@@ -3588,6 +3748,11 @@ await updateDoc(doc(db, "users", snapshot.docs[0].id), {ghostMode: newGhostMode}
   <button onClick={() => setVerificationOpen(true)} style={{...btn(false), marginBottom:8}}>
 ✅ Pedir Verificacao
 </button>
+{user && (
+<button onClick={() => setVaultOpen(true)} style={{...btn(false), marginBottom:8}}>
+🔐 Cofre Privado
+</button>
+)}
 )}
 )}
 )}
@@ -4713,6 +4878,12 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{vaultOpen && (
+<PrivateVault
+user={user}
+onClose={() => setVaultOpen(false)}
+/>
+)}
 {secretMsgOpen && secretMsgRecipient && (
 <SecretMessage
 user={user}
