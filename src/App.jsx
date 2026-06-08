@@ -1600,6 +1600,30 @@ const [text, setText] = React.useState("");
 const chatId = [user.email, recipient].sort().join("_");
 
 React.useEffect(() => {
+const handleVisibilityChange = () => {
+if (document.visibilityState === "hidden") {
+console.log("Utilizador saiu do chat");
+}
+};
+document.addEventListener("visibilitychange", handleVisibilityChange);
+const style = document.createElement("style");
+style.id = "no-screenshot";
+style.textContent = `
+.chat-content {
+-webkit-user-select: none;
+-webkit-touch-callout: none;
+user-select: none;
+}
+`;
+document.head.appendChild(style);
+return () => {
+document.removeEventListener("visibilitychange", handleVisibilityChange);
+const s = document.getElementById("no-screenshot");
+if (s) s.remove();
+};
+}, []);
+
+React.useEffect(() => {
 const unsubscribe = onSnapshot(
 query(collection(db, "chats", chatId, "messages")),
 (snapshot) => {
@@ -1622,7 +1646,7 @@ setText("");
 };
 
 return (
-<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div className="chat-content" style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
 <div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,height:"80vh",display:"flex",flexDirection:"column"}}>
 <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(201,150,58,0.2)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 <div>
