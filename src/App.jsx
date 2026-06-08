@@ -2190,6 +2190,66 @@ registerView();
 }, [enabled, user, targetEmail]);
 return null;
 }
+function BondCoins({user, onClose}) {
+const [coins, setCoins] = React.useState(0);
+const [loading, setLoading] = React.useState(false);
+
+React.useEffect(() => {
+if (!user) return;
+const loadCoins = async () => {
+const q = query(collection(db, "users"), where("email", "==", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) setCoins(snapshot.docs[0].data().bondCoins || 0);
+};
+loadCoins();
+}, [user]);
+
+const packages = [
+{coins: 100, price: "0,99 EUR", label: "🪙 100 coins"},
+{coins: 500, price: "3,99 EUR", label: "🪙 500 coins"},
+{coins: 1000, price: "6,99 EUR", label: "💰 1000 coins"},
+{coins: 5000, price: "24,99 EUR", label: "💎 5000 coins"},
+];
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.88)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:12,width:"100%",maxWidth:480,padding:24}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#1a1209",marginBottom:4}}>🪙 BondCoins</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:8}}>A moeda oficial do Bonded</p>
+<div style={{background:"linear-gradient(135deg,#c9963a,#e8b96a)",borderRadius:12,padding:16,textAlign:"center",marginBottom:20}}>
+<div style={{fontSize:32,fontWeight:700,color:"white"}}>{coins}</div>
+<div style={{fontSize:13,color:"rgba(255,255,255,0.8)"}}>Os teus BondCoins</div>
+</div>
+<h3 style={{fontSize:13,color:"#4a3828",marginBottom:12}}>Comprar BondCoins:</h3>
+<div style={{display:"flex",flexDirection:"column",gap:8}}>
+{packages.map((pkg, i) => (
+<button key={i} onClick={() => {
+alert(`Redirecionar para pagamento de ${pkg.price} por ${pkg.coins} BondCoins`);
+}} style={{
+padding:"12px 16px",
+background:"white",
+border:"1px solid rgba(201,150,58,0.3)",
+borderRadius:8,
+cursor:"pointer",
+display:"flex",
+justifyContent:"space-between",
+alignItems:"center",
+fontSize:13,
+}}>
+<span style={{fontWeight:700}}>{pkg.label}</span>
+<span style={{color:"#c9963a",fontWeight:700}}>{pkg.price}</span>
+</button>
+))}
+</div>
+<p style={{fontSize:11,color:"#8a7060",marginTop:12,textAlign:"center"}}>
+BondCoins podem ser usados para enviar mensagens, presentes e destaques
+</p>
+</div>
+</div>
+);
+}
+
 function FollowButton({user, targetEmail}) {
 const [following, setFollowing] = React.useState(false);
 const [loading, setLoading] = React.useState(false);
@@ -2855,6 +2915,7 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [secondProfileOpen, setSecondProfileOpen] = React.useState(false);
   const [verificationOpen, setVerificationOpen] = React.useState(false);
   const [bondPulseOpen, setBondPulseOpen] = React.useState(false);
+  const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
   const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
   const [giftOpen, setGiftOpen] = React.useState(false);
 const [giftTarget, setGiftTarget] = React.useState("");
@@ -4510,6 +4571,12 @@ onClose={() => setSecretMsgOpen(false)}
 user={user}
 targetEmail={giftTarget}
 onClose={() => setGiftOpen(false)}
+/>
+)}
+{bondCoinsOpen && (
+<BondCoins
+user={user}
+onClose={() => setBondCoinsOpen(false)}
 />
 )}
 {bondCoinsOpen && (
