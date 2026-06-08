@@ -1642,6 +1642,12 @@ setSecretMsgOpen(true);
 }} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,marginLeft:8}}>
 🔐
 </button>
+<button onClick={() => {
+setSecretMsgRecipient(recipient);
+setSecretMsgOpen(true);
+}} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,marginLeft:8}}>
+🔐
+</button>
 
 </div>
 <div style={{flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:8}}>
@@ -2054,6 +2060,70 @@ borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
 </div>
 </>
 )}
+</div>
+</div>
+);
+}
+
+function SecretMessage({user, recipient, onClose}) {
+const [text, setText] = React.useState("");
+const [loading, setLoading] = React.useState(false);
+
+const handleSend = async () => {
+if (!text.trim()) return;
+setLoading(true);
+try {
+await addDoc(collection(db, "secretMessages"), {
+from: user.email,
+to: recipient,
+text: btoa(unescape(encodeURIComponent(text))),
+createdAt: new Date().toISOString(),
+read: false,
+deleted: false,
+});
+await addDoc(collection(db, "notifications"), {
+to: recipient,
+message: "Recebeste uma mensagem secreta! Abre para ler — desaparece depois!",
+read: false,
+createdAt: new Date().toISOString(),
+});
+alert("Mensagem secreta enviada!");
+onClose();
+} catch(e) {
+alert("Erro ao enviar!");
+}
+setLoading(false);
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(10,5,20,0.95)",zIndex:450,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#1a0a2e",borderRadius:12,width:"100%",maxWidth:480,padding:24,border:"1px solid #c9963a"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#c9963a",marginBottom:4}}>🔐 Mensagem Secreta</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:20}}>Esta mensagem desaparece depois de ser lida. Para: {recipient}</p>
+<textarea
+value={text}
+onChange={e => setText(e.target.value)}
+placeholder="Escreve a tua mensagem secreta..."
+style={{
+width:"100%",padding:14,borderRadius:8,
+border:"1px solid #c9963a",
+background:"#2a1f3e",color:"#fdf6ee",
+fontSize:13,minHeight:120,resize:"none",
+fontFamily:"inherit"
+}}
+/>
+<button onClick={handleSend} disabled={loading} style={{
+width:"100%",marginTop:12,padding:14,
+background:"linear-gradient(135deg,#c9963a,#e8b96a)",
+color:"#1a0a2e",border:"none",borderRadius:8,
+cursor:"pointer",fontWeight:700,fontSize:14
+}}>
+{loading ? "A enviar..." : "🔐 Enviar Mensagem Secreta"}
+</button>
+<p style={{fontSize:11,color:"#8a7060",marginTop:8,textAlign:"center"}}>
+A mensagem desaparece automaticamente apos ser lida
+</p>
 </div>
 </div>
 );
@@ -2996,6 +3066,9 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [bondPulseOpen, setBondPulseOpen] = React.useState(false);
   const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
   const [giftOpen, setGiftOpen] = React.useState(false);
+  const [secretMsgOpen, setSecretMsgOpen] = React.useState(false);
+const [secretMsgRecipient, setSecretMsgRecipient] = React.useState("");
+
 const [giftRecipient, setGiftRecipient] = React.useState("");
   const [bondCoinsOpen, setBondCoinsOpen] = React.useState(false);
   const [giftOpen, setGiftOpen] = React.useState(false);
@@ -4654,6 +4727,14 @@ targetEmail={giftTarget}
 onClose={() => setGiftOpen(false)}
 />
 )}
+{secretMsgOpen && secretMsgRecipient && (
+<SecretMessage
+user={user}
+recipient={secretMsgRecipient}
+onClose={() => setSecretMsgOpen(false)}
+/>
+)}
+
 {giftOpen && giftRecipient && (
 <GiftModal
 user={user}
