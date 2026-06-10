@@ -2102,6 +2102,104 @@ borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
 );
 }
 
+function ThoughtBubble({user, lang, onClose}) {
+const [text, setText] = React.useState("");
+const [posted, setPosted] = React.useState(false);
+const [loading, setLoading] = React.useState(false);
+const [thoughts, setThoughts] = React.useState([]);
+
+React.useEffect(() => {
+const now = new Date();
+const unsubscribe = onSnapshot(
+query(collection(db, "thoughts")),
+(snapshot) => {
+const data = snapshot.docs
+.map(d => ({id: d.id, ...d.data()}))
+.filter(t => !t.deleted && new Date(t.expiresAt) > now)
+.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+setThoughts(data);
+}
+);
+return () => unsubscribe();
+}, []);
+
+const handlePost = async () => {
+if (!text.trim()) return;
+setLoading(true);
+try {
+const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+await addDoc(collection(db, "thoughts"), {
+text,
+author: user.email,
+likes: 0,
+createdAt: new Date().toISOString(),
+expiresAt,
+deleted: false,
+});
+setText("");
+setPosted(true);
+setTimeout(() => setPosted(false), 3000);
+} catch(e) {
+alert("Erro ao publicar!");
+}
+setLoading(false);
+};
+
+const handleLike = async (thought) => {
+if (!thought.id) return;
+await updateDoc(doc(db, "thoughts", thought.id), {likes: (thought.likes || 0) + 1});
+};
+
+const getTimeLeft = (expiresAt) => {
+const mins = Math.round((new Date(expiresAt) - new Date()) / 60000);
+if (mins <= 0) return "A expirar...";
+if (mins < 60) return `${mins} min restantes`;
+return "1 hora";
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(26,18,9,0.92)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#fdf6ee",borderRadius:16,width:"100%",maxWidth:480,padding:24,maxHeight:"90vh",overflowY:"auto"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16}}>← Voltar</button>
+<h2 style={{fontFamily:"serif",fontWeight:400,color:"#1a1209",marginBottom:4}}>💭 Thought Bubble</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:16}}>Publica um pensamento — desaparece em 1 hora se ninguem interagir!</p>
+
+{user && (
+<div style={{background:"white",borderRadius:12,padding:16,marginBottom:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+<textarea
+value={text}
+onChange={e => setText(e.target.value)}
+placeholder="O que tens na cabeca agora? 💭"
+style={{width:"100%",padding:10,borderRadius:8,border:"1px solid rgba(201,150,58,0.3)",fontSize:13,minHeight:80,resize:"none",fontFamily:"inherit"}}
+/>
+{posted && <p style={{color:"#2d8a2d",fontSize:12,margin:"8px 0"}}>✅ Publicado! Desaparece em 1 hora se ninguem der like.</p>}
+<button onClick={handlePost} disabled={loading} style={{marginTop:8,padding:"10px 20px",background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"white",border:"none",borderRadius:20,cursor:"pointer",fontWeight:700,fontSize:13}}>
+{loading ? "A publicar..." : "💭 Publicar Pensamento"}
+</button>
+</div>
+)}
+
+{thoughts.length === 0 && (
+<div style={{textAlign:"center",color:"#8a7060",padding:32,fontSize:13}}>
+Sem pensamentos agora. Sê o primeiro! 💭
+</div>
+)}
+
+{thoughts.map(thought => (
+<div key={thought.id} style={{background:"white",borderRadius:12,padding:16,marginBottom:12,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+<div style={{fontSize:14,color:"#1a1209",lineHeight:1.7,marginBottom:10}}>{thought.text}</div>
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+<button onClick={() => handleLike(thought)} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,color:"#c4606a"}}>
+❤️ {thought.likes || 0}
+</button>
+<span style={{fontSize:11,color:"#c9963a",fontWeight:700}}>⏰ {getTimeLeft(thought.expiresAt)}</span>
+</div>
+</div>
+))}
+</div>
+</div>
+);
+}
 function SoulPrint({user, partner, onClose}) {
 const [mySoulPrint, setMySoulPrint] = React.useState(null);
 const [partnerSoulPrint, setPartnerSoulPrint] = React.useState(null);
@@ -3550,6 +3648,7 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [vaultOpen, setVaultOpen] = React.useState(false);
   const [loveScoreOpen, setLoveScoreOpen] = React.useState(false);
   const [soulPrintOpen, setSoulPrintOpen] = React.useState(false);
+  const [thoughtBubbleOpen, setThoughtBubbleOpen] = React.useState(false);
 const [soulPrintPartner, setSoulPrintPartner] = React.useState("");
 
 const [loveScorePartner, setLoveScorePartner] = React.useState("");
@@ -4120,6 +4219,9 @@ alert("Erro ao eliminar conta. Tenta fazer login novamente.");
 
              <button onClick={() => goTo("feed")} style={{...btn(false), marginBottom:8}}>
 📸 Feed
+</button>
+<button onClick={() => setThoughtBubbleOpen(true)} style={{...btn(false), marginBottom:8}}>
+💭 Thought Bubble
 </button>
               <button onClick={() => goTo("register")} style={btn(true)}>
                 {t.btn_register}
@@ -5205,6 +5307,13 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{thoughtBubbleOpen && (
+<ThoughtBubble
+user={user}
+lang={lang}
+onClose={() => setThoughtBubbleOpen(false)}
+/>
+)}
 {soulPrintOpen && (
 <SoulPrint
 user={user}
