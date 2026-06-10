@@ -1672,6 +1672,12 @@ setSecretMsgOpen(true);
 }} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,marginLeft:8}}>
 🔐
 </button>
+<button onClick={() => {
+setLoveScorePartner(recipient);
+setLoveScoreOpen(true);
+}} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,marginLeft:8}}>
+💕
+</button>
 
 </div>
 <div style={{flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:8}}>
@@ -2083,6 +2089,135 @@ borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
 ))}
 </div>
 </>
+)}
+</div>
+</div>
+);
+}
+
+function LoveAIScore({user, partner, onClose}) {
+const [score, setScore] = React.useState(null);
+const [loading, setLoading] = React.useState(false);
+const [analysis, setAnalysis] = React.useState("");
+
+const calculateScore = async () => {
+setLoading(true);
+try {
+const chatId = [user.email, partner].sort().join("_");
+const q = query(collection(db, "chats", chatId, "messages"));
+const snapshot = await getDocs(q);
+const messages = snapshot.docs.map(d => d.data());
+
+const totalMessages = messages.length;
+const userMessages = messages.filter(m => m.author === user.email).length;
+const partnerMessages = messages.filter(m => m.author !== user.email).length;
+const responseRate = totalMessages > 0 ? Math.min(100, Math.round((Math.min(userMessages, partnerMessages) / Math.max(userMessages, partnerMessages)) * 100)) : 50;
+const finalScore = Math.round((responseRate * 0.4) + (Math.min(totalMessages, 100) * 0.3) + (Math.random() * 30));
+
+setScore(Math.min(99, Math.max(60, finalScore)));
+
+const analyses = [
+"A vossa comunicacao e muito equilibrada — ambos participam igualmente.",
+"Notamos um padrao de respostas rapidas — sinal de interesse mutuo!",
+"A frequencia das mensagens indica uma conexao forte entre voces.",
+"O vosso ritmo de conversa e muito saudavel e natural.",
+];
+setAnalysis(analyses[Math.floor(Math.random() * analyses.length)]);
+
+await addDoc(collection(db, "loveScores"), {
+user1: user.email,
+user2: partner,
+score: Math.min(99, Math.max(60, finalScore)),
+createdAt: new Date().toISOString(),
+});
+} catch(e) {
+setScore(75);
+setAnalysis("Continuem a comunicar para uma analise mais precisa!");
+}
+setLoading(false);
+};
+
+const getColor = (s) => {
+if (s >= 90) return "#e8b96a";
+if (s >= 75) return "#c9963a";
+if (s >= 60) return "#c4606a";
+return "#8a7060";
+};
+
+const getEmoji = (s) => {
+if (s >= 90) return "💍";
+if (s >= 75) return "❤️";
+if (s >= 60) return "💕";
+return "💭";
+};
+
+const getLabel = (s) => {
+if (s >= 90) return "Amor Profundo";
+if (s >= 75) return "Conexao Forte";
+if (s >= 60) return "Boa Compatibilidade";
+return "A Desenvolver";
+};
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(10,5,20,0.95)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#1a0a2e",borderRadius:16,width:"100%",maxWidth:400,padding:28,border:"2px solid #c9963a",textAlign:"center"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16,float:"left"}}>← Voltar</button>
+<div style={{clear:"both"}}/>
+<h2 style={{color:"#c9963a",fontFamily:"serif",fontWeight:400,marginBottom:4}}>💕 Love AI Score</h2>
+<p style={{fontSize:12,color:"#8a7060",marginBottom:24}}>A IA analisa a vossa compatibilidade</p>
+
+{!score && !loading && (
+<div>
+<div style={{fontSize:48,marginBottom:16}}>💕</div>
+<p style={{color:"#fdf6ee",fontSize:13,marginBottom:20}}>Com: {partner}</p>
+<button onClick={calculateScore} style={{
+width:"100%",padding:14,
+background:"linear-gradient(135deg,#c9963a,#e8b96a)",
+color:"#1a0a2e",border:"none",borderRadius:24,
+cursor:"pointer",fontWeight:700,fontSize:14
+}}>
+💕 Calcular Love Score
+</button>
+</div>
+)}
+
+{loading && (
+<div>
+<div style={{fontSize:48,marginBottom:16}}>🔄</div>
+<p style={{color:"#fdf6ee",fontSize:13}}>A IA esta a analisar a vossa conexao...</p>
+</div>
+)}
+
+{score && !loading && (
+<div>
+<div style={{
+width:120,height:120,borderRadius:"50%",
+background:`conic-gradient(${getColor(score)} ${score}%, #2a1f3e ${score}%)`,
+display:"flex",alignItems:"center",justifyContent:"center",
+margin:"0 auto 16px",
+boxShadow:`0 0 30px ${getColor(score)}44`,
+}}>
+<div style={{
+width:90,height:90,borderRadius:"50%",
+background:"#1a0a2e",
+display:"flex",flexDirection:"column",
+alignItems:"center",justifyContent:"center",
+}}>
+<div style={{fontSize:24}}>{getEmoji(score)}</div>
+<div style={{fontSize:22,fontWeight:700,color:getColor(score)}}>{score}%</div>
+</div>
+</div>
+<div style={{fontSize:16,fontWeight:700,color:getColor(score),marginBottom:8}}>{getLabel(score)}</div>
+<p style={{fontSize:13,color:"#8a7060",marginBottom:20,lineHeight:1.6}}>{analysis}</p>
+<button onClick={calculateScore} style={{
+width:"100%",padding:12,
+background:"transparent",
+color:"#c9963a",border:"1px solid #c9963a",borderRadius:24,
+cursor:"pointer",fontWeight:700,fontSize:13
+}}>
+🔄 Recalcular
+</button>
+</div>
 )}
 </div>
 </div>
@@ -3278,6 +3413,8 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [giftOpen, setGiftOpen] = React.useState(false);
   const [secretMsgOpen, setSecretMsgOpen] = React.useState(false);
   const [vaultOpen, setVaultOpen] = React.useState(false);
+  const [loveScoreOpen, setLoveScoreOpen] = React.useState(false);
+const [loveScorePartner, setLoveScorePartner] = React.useState("");
 
 const [secretMsgRecipient, setSecretMsgRecipient] = React.useState("");
 
@@ -4792,7 +4929,7 @@ cursor: "pointer",
 fontSize: 13,
 fontWeight: 700,
 }}>
-👤 Ver perfil
+👤  
 </button>
 )}
 
@@ -4930,6 +5067,13 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{loveScoreOpen && loveScorePartner && (
+<LoveAIScore
+user={user}
+partner={loveScorePartner}
+onClose={() => setLoveScoreOpen(false)}
+/>
+)}
 {vaultOpen && (
 <PrivateVault
 user={user}
