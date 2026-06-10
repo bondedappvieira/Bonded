@@ -1678,6 +1678,13 @@ setLoveScoreOpen(true);
 }} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,marginLeft:8}}>
 💕
 </button>
+<button onClick={() => {
+setSoulPrintPartner(recipient);
+setSoulPrintOpen(true);
+}} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,marginLeft:8}}>
+💫
+</button>
+
 
 </div>
 <div style={{flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:8}}>
@@ -2089,6 +2096,134 @@ borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
 ))}
 </div>
 </>
+)}
+</div>
+</div>
+);
+}
+
+function SoulPrint({user, partner, onClose}) {
+const [mySoulPrint, setMySoulPrint] = React.useState(null);
+const [partnerSoulPrint, setPartnerSoulPrint] = React.useState(null);
+const [coupleSoulPrint, setCoupleSoulPrint] = React.useState(null);
+const [loading, setLoading] = React.useState(false);
+const canvasRef = React.useRef(null);
+const coupleCanvasRef = React.useRef(null);
+
+const generateSoulPrint = (seed, canvas, colors) => {
+const ctx = canvas.getContext("2d");
+const cx = canvas.width / 2;
+const cy = canvas.height / 2;
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+const rng = (n) => {
+let x = Math.sin(seed + n) * 10000;
+return x - Math.floor(x);
+};
+for (let layer = 0; layer < 8; layer++) {
+const petals = Math.floor(rng(layer) * 6) + 4;
+const radius = 20 + layer * 15;
+const colorIndex = Math.floor(rng(layer + 10) * colors.length);
+ctx.beginPath();
+ctx.strokeStyle = colors[colorIndex];
+ctx.lineWidth = 1.5;
+ctx.globalAlpha = 0.7;
+for (let i = 0; i <= petals * 10; i++) {
+const angle = (i / (petals * 10)) * Math.PI * 2;
+const r = radius * (1 + 0.3 * Math.sin(petals * angle + rng(layer) * Math.PI));
+const x = cx + r * Math.cos(angle);
+const y = cy + r * Math.sin(angle);
+i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+}
+ctx.closePath();
+ctx.stroke();
+}
+ctx.globalAlpha = 1;
+};
+
+const generate = async () => {
+setLoading(true);
+try {
+const seed1 = user.email.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+const seed2 = partner ? partner.split("").reduce((a, c) => a + c.charCodeAt(0), 0) : 0;
+
+const canvas1 = canvasRef.current;
+generateSoulPrint(seed1, canvas1, ["#c9963a","#e8b96a","#c4606a","#e08090","#8a7060"]);
+setMySoulPrint(canvas1.toDataURL());
+
+if (partner && coupleCanvasRef.current) {
+const canvas2 = document.createElement("canvas");
+canvas2.width = 200;
+canvas2.height = 200;
+generateSoulPrint(seed2, canvas2, ["#4a90d9","#7ab8f5","#2d6fa8","#9fc8f0","#1a4a7a"]);
+setPartnerSoulPrint(canvas2.toDataURL());
+
+const coupleCanvas = coupleCanvasRef.current;
+generateSoulPrint((seed1 + seed2) / 2, coupleCanvas, ["#c9963a","#4a90d9","#e8b96a","#7ab8f5","#c4606a"]);
+setCoupleSoulPrint(coupleCanvas.toDataURL());
+}
+
+await addDoc(collection(db, "soulprints"), {
+email: user.email,
+seed: seed1,
+createdAt: new Date().toISOString(),
+});
+} catch(e) {
+console.error(e);
+}
+setLoading(false);
+};
+
+React.useEffect(() => {
+if (canvasRef.current) generate();
+}, []);
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(5,2,15,0.97)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}}>
+<div style={{background:"#0a0514",borderRadius:16,width:"100%",maxWidth:480,padding:28,border:"2px solid #c9963a",textAlign:"center"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:16,float:"left"}}>← Voltar</button>
+<div style={{clear:"both"}}/>
+<h2 style={{color:"#c9963a",fontFamily:"serif",fontWeight:400,marginBottom:4}}>💫 Soul Print</h2>
+<p style={{fontSize:11,color:"#8a7060",marginBottom:20}}>A tua identidade digital unica — nunca existiu outra igual</p>
+
+<canvas ref={canvasRef} width={200} height={200} style={{display:"none"}}/>
+<canvas ref={coupleCanvasRef} width={200} height={200} style={{display:"none"}}/>
+
+{loading && (
+<div style={{padding:32,color:"#c9963a"}}>A gerar o teu Soul Print...</div>
+)}
+
+{!loading && mySoulPrint && (
+<div>
+<div style={{marginBottom:20}}>
+<p style={{color:"#8a7060",fontSize:12,marginBottom:8}}>O teu Soul Print</p>
+<img src={mySoulPrint} style={{width:160,height:160,borderRadius:"50%",border:"3px solid #c9963a",boxShadow:"0 0 30px rgba(201,150,58,0.4)"}}/>
+<p style={{color:"#fdf6ee",fontSize:11,marginTop:8}}>Unico no universo — so teu</p>
+</div>
+
+{partnerSoulPrint && (
+<div style={{marginBottom:20}}>
+<p style={{color:"#8a7060",fontSize:12,marginBottom:8}}>Soul Print de {partner?.split("@")[0]}</p>
+<img src={partnerSoulPrint} style={{width:120,height:120,borderRadius:"50%",border:"3px solid #4a90d9",boxShadow:"0 0 20px rgba(74,144,217,0.4)"}}/>
+</div>
+)}
+
+{coupleSoulPrint && (
+<div style={{marginBottom:20,padding:16,background:"rgba(201,150,58,0.1)",borderRadius:12,border:"1px solid rgba(201,150,58,0.3)"}}>
+<p style={{color:"#c9963a",fontSize:13,fontWeight:700,marginBottom:8}}>💫 Soul Print do Casal</p>
+<img src={coupleSoulPrint} style={{width:140,height:140,borderRadius:"50%",border:"3px solid #c9963a",boxShadow:"0 0 30px rgba(201,150,58,0.6)"}}/>
+<p style={{color:"#8a7060",fontSize:11,marginTop:8}}>Unico no universo — so existe por causa de voces dois</p>
+</div>
+)}
+
+<button onClick={generate} style={{
+width:"100%",padding:12,
+background:"transparent",
+color:"#c9963a",border:"1px solid #c9963a",
+borderRadius:24,cursor:"pointer",fontWeight:700,fontSize:13
+}}>
+🔄 Regenerar
+</button>
+</div>
 )}
 </div>
 </div>
@@ -3414,6 +3549,9 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [secretMsgOpen, setSecretMsgOpen] = React.useState(false);
   const [vaultOpen, setVaultOpen] = React.useState(false);
   const [loveScoreOpen, setLoveScoreOpen] = React.useState(false);
+  const [soulPrintOpen, setSoulPrintOpen] = React.useState(false);
+const [soulPrintPartner, setSoulPrintPartner] = React.useState("");
+
 const [loveScorePartner, setLoveScorePartner] = React.useState("");
 
 const [secretMsgRecipient, setSecretMsgRecipient] = React.useState("");
@@ -5067,6 +5205,13 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{soulPrintOpen && (
+<SoulPrint
+user={user}
+partner={soulPrintPartner}
+onClose={() => setSoulPrintOpen(false)}
+/>
+)}
 {loveScoreOpen && loveScorePartner && (
 <LoveAIScore
 user={user}
