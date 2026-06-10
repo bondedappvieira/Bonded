@@ -2102,6 +2102,158 @@ borderRadius:12,cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
 );
 }
 
+function RandomConnect({user, onClose}) {
+const [status, setStatus] = React.useState("waiting");
+const [partner, setPartner] = React.useState(null);
+const [messages, setMessages] = React.useState([]);
+const [text, setText] = React.useState("");
+const [timeLeft, setTimeLeft] = React.useState(600);
+const [sessionId, setSessionId] = React.useState(null);
+
+React.useEffect(() => {
+if (!user) return;
+const findPartner = async () => {
+const q = query(collection(db, "randomConnect"),
+where("status", "==", "waiting"),
+where("email", "!=", user.email));
+const snapshot = await getDocs(q);
+if (!snapshot.empty) {
+const partnerDoc = snapshot.docs[0];
+const sid = [user.email, partnerDoc.data().email].sort().join("_RC_");
+await updateDoc(doc(db, "randomConnect", partnerDoc.id), {status: "connected", partner: user.email});
+await addDoc(collection(db, "randomConnect"), {
+email: user.email,
+status: "connected",
+partner: partnerDoc.data().email,
+sessionId: sid,
+createdAt: new Date().toISOString(),
+});
+setPartner(partnerDoc.data().email);
+setSessionId(sid);
+setStatus("connected");
+} else {
+const docRef = await addDoc(collection(db, "randomConnect"), {
+email: user.email,
+status: "waiting",
+createdAt: new Date().toISOString(),
+});
+const unsubscribe = onSnapshot(doc(db, "randomConnect", docRef.id), (d) => {
+if (d.data()?.status === "connected") {
+const sid = [user.email, d.data().partner].sort().join("_RC_");
+setPartner(d.data().partner);
+setSessionId(sid);
+setStatus("connected");
+unsubscribe();
+}
+});
+}
+};
+findPartner();
+}, [user]);
+
+React.useEffect(() => {
+if (status !== "connected" || !sessionId) return;
+const unsubscribe = onSnapshot(
+query(collection(db, "randomChats", sessionId, "messages")),
+(snapshot) => {
+const data = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+setMessages(data.sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt)));
+}
+);
+const timer = setInterval(() => {
+setTimeLeft(prev => {
+if (prev <= 1) {
+clearInterval(timer);
+setStatus("ended");
+return 0;
+}
+return prev - 1;
+});
+}, 1000);
+return () => { unsubscribe(); clearInterval(timer); };
+}, [status, sessionId]);
+
+const sendMessage = async () => {
+if (!text.trim() || !sessionId) return;
+await addDoc(collection(db, "randomChats", sessionId, "messages"), {
+text,
+author: user.email,
+createdAt: new Date().toISOString(),
+});
+setText("");
+};
+
+const formatTime = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,"0")}`;
+
+return (
+<div style={{position:"fixed",inset:0,background:"rgba(10,5,20,0.95)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+<div style={{background:"#1a0a2e",borderRadius:16,width:"100%",maxWidth:480,height:"85vh",display:"flex",flexDirection:"column",border:"2px solid #c9963a"}}>
+<div style={{padding:"16px 20px",borderBottom:"1px solid rgba(201,150,58,0.2)"}}>
+<button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:"#8a7060",marginBottom:8}}>← Sair</button>
+<h2 style={{color:"#c9963a",fontFamily:"serif",fontWeight:400,margin:0}}>🎲 Random Connect</h2>
+{status === "connected" && (
+<div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+<span style={{fontSize:12,color:"#8a7060"}}>A falar com alguem anonimo</span>
+<span style={{fontSize:12,color: timeLeft < 60 ? "#c4606a" : "#c9963a",fontWeight:700}}>⏰ {formatTime(timeLeft)}</span>
+</div>
+)}
+</div>
+
+{status === "waiting" && (
+<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
+<div style={{fontSize:48}}>🎲</div>
+<p style={{color:"#fdf6ee",fontSize:14,textAlign:"center"}}>A procurar alguem para falar...</p>
+<p style={{color:"#8a7060",fontSize:12,textAlign:"center"}}>Vais ser conectado com uma pessoa aleatoria do mundo por 10 minutos!</p>
+</div>
+)}
+
+{status === "connected" && (
+<>
+<div style={{flex:1,overflowY:"auto",padding:16,display:"flex",flexDirection:"column",gap:8}}>
+<div style={{textAlign:"center",padding:12,background:"rgba(201,150,58,0.1)",borderRadius:8,marginBottom:8}}>
+<span style={{fontSize:12,color:"#c9963a"}}>Conectado! Tens {formatTime(timeLeft)} para falar.</span>
+</div>
+{messages.map(msg => (
+<div key={msg.id} style={{
+maxWidth:"75%",padding:"10px 14px",
+borderRadius: msg.author === user.email ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+background: msg.author === user.email ? "linear-gradient(135deg,#c9963a,#e8b96a)" : "#2a1f3e",
+color: msg.author === user.email ? "#1a0a2e" : "#fdf6ee",
+alignSelf: msg.author === user.email ? "flex-end" : "flex-start",
+fontSize:13,
+}}>
+{msg.text}
+</div>
+))}
+</div>
+<div style={{padding:16,borderTop:"1px solid rgba(201,150,58,0.2)",display:"flex",gap:8}}>
+<input
+value={text}
+onChange={e => setText(e.target.value)}
+onKeyDown={e => e.key === "Enter" && sendMessage()}
+placeholder="Escreve uma mensagem..."
+style={{flex:1,padding:"10px 16px",borderRadius:24,border:"1px solid rgba(201,150,58,0.3)",background:"#2a1f3e",color:"#fdf6ee",fontSize:13}}
+/>
+<button onClick={sendMessage} style={{padding:"10px 16px",background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"#1a0a2e",border:"none",borderRadius:24,cursor:"pointer",fontWeight:700}}>➤</button>
+</div>
+</>
+)}
+
+{status === "ended" && (
+<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
+<div style={{fontSize:48}}>⏰</div>
+<p style={{color:"#fdf6ee",fontSize:14,textAlign:"center"}}>O tempo acabou!</p>
+<p style={{color:"#8a7060",fontSize:12,textAlign:"center"}}>A conversa foi apagada automaticamente.</p>
+<button onClick={onClose} style={{padding:"12px 24px",background:"linear-gradient(135deg,#c9963a,#e8b96a)",color:"#1a0a2e",border:"none",borderRadius:24,cursor:"pointer",fontWeight:700}}>
+Fechar
+</button>
+</div>
+)}
+</div>
+</div>
+);
+}
+
 function ThoughtBubble({user, lang, onClose}) {
 const [text, setText] = React.useState("");
 const [posted, setPosted] = React.useState(false);
@@ -3649,6 +3801,7 @@ const [showNotifications, setShowNotifications] = React.useState(false);
   const [loveScoreOpen, setLoveScoreOpen] = React.useState(false);
   const [soulPrintOpen, setSoulPrintOpen] = React.useState(false);
   const [thoughtBubbleOpen, setThoughtBubbleOpen] = React.useState(false);
+  const [randomConnectOpen, setRandomConnectOpen] = React.useState(false);
 const [soulPrintPartner, setSoulPrintPartner] = React.useState("");
 
 const [loveScorePartner, setLoveScorePartner] = React.useState("");
@@ -4222,6 +4375,9 @@ alert("Erro ao eliminar conta. Tenta fazer login novamente.");
 </button>
 <button onClick={() => setThoughtBubbleOpen(true)} style={{...btn(false), marginBottom:8}}>
 💭 Thought Bubble
+</button>
+<button onClick={() => setRandomConnectOpen(true)} style={{...btn(false), marginBottom:8}}>
+🎲 Random Connect
 </button>
               <button onClick={() => goTo("register")} style={btn(true)}>
                 {t.btn_register}
@@ -5307,6 +5463,13 @@ await updateDoc(doc(db, "users", user.uid), {isPremium: true});
         <GDPRBanner lang={lang} onAccept={() => setGdprAccepted(true)} />
       )}
     {screen === "auth" && (
+{randomConnectOpen && (
+<RandomConnect
+user={user}
+onClose={() => setRandomConnectOpen(false)}
+/>
+)}
+
 {thoughtBubbleOpen && (
 <ThoughtBubble
 user={user}
