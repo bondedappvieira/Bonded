@@ -37,6 +37,9 @@ window.addEventListener('unhandledrejection',function(e){bootError('Promise: '+(
         if(!r.ok) throw new Error('src/App.jsx nao encontrado ('+r.status+')');
         return r.text();
       }).then(function(code){
+        code=code.replace(/import[^\n;]*from\s*['"]react-dom['"];?/g,'');
+        code=code.replace(/import[^\n;]*from\s*['"]react['"];?/g,'');
+        code='const {useState,useEffect,useRef,useMemo,useCallback,useContext,Fragment}=React;\n'+code;
         var out=Babel.transform(code,{presets:['react'],filename:'App.jsx',sourceType:'module'});
         var blob=new Blob([out.code],{type:'text/javascript'});
         var url=URL.createObjectURL(blob);
