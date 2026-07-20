@@ -1,28 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bonded — Officially in love.</title>
-<meta name="google-site-verification" content="QmfVqFIZj-0ZY--EXanXINjaJ0c_maIe4c9klQOq3K0" />
-<meta name="description" content="Torne seu amor oficial com um certificado gerado por IA.">
-<meta property="og:title" content="Bonded — Officially in love">
-<meta property="og:description" content="Torne seu amor oficial com um certificado gerado por IA.">
-<meta property="og:url" content="https://bonded-app.netlify.app">
-<meta property="og:type" content="website">
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#c9963a">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Bonded">
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Bonded — Officially in love</title>
+  <meta name="description" content="Bonded — rede social e encontros. Sente o coração de quem amas." />
+  <meta name="theme-color" content="#c9963a" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/png" href="/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Bonded" />
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; background: #fdf6ee; }
+    #root { min-height: 100vh; }
+    #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #fdf6ee; font-family: Georgia, serif; }
+    #boot .ring { width: 46px; height: 46px; border-radius: 50%; border: 4px solid rgba(201,150,58,0.25); border-top-color: #c9963a; animation: spin 1s linear infinite; }
+    #boot .name { font-size: 20px; letter-spacing: 2px; color: #1a1209; }
+    #boot .sub { font-size: 12px; color: #8a7060; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel" src="src/App.jsx"></script>
-<script type="text/babel">
-ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
-</script>
+  <div id="root">
+    <div id="boot"><div class="ring"></div><div class="name">Bonded</div><div class="sub">a carregar…</div></div>
+  </div>
+  <script type="text/babel" data-type="module" data-presets="react">
+    import App from './src/App.jsx';
+    const container = document.getElementById('root');
+    container.innerHTML = '';
+    ReactDOM.createRoot(container).render(React.createElement(App));
+  </script>
 </body>
 </html>
