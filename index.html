@@ -33,15 +33,19 @@ window.addEventListener('unhandledrejection',function(e){bootError('Promise: '+(
     try{
       if(typeof Babel==='undefined'){ return setTimeout(run,150); }
       bootStatus('a preparar a app…');
-      fetch('./src/App.jsx').then(function(r){
+      fetch('./src/App.jsx?v=final').then(function(r){
         if(!r.ok) throw new Error('src/App.jsx nao encontrado ('+r.status+')');
         return r.text();
       }).then(function(code){
         code=code.replace(/import[^\n;]*from\s*['"]react-dom['"];?/g,'');
         code=code.replace(/import[^\n;]*from\s*['"]react['"];?/g,'');
         code='const {useState,useEffect,useRef,useMemo,useCallback,useContext,Fragment}=React;\n'+code;
-        var out=Babel.transform(code,{presets:['react'],filename:'App.jsx',sourceType:'module'});
-        var blob=new Blob([out.code],{type:'text/javascript'});
+        var out=Babel.transform(code,{presets:[['react',{runtime:'classic'}]],filename:'App.jsx',sourceType:'module'}).code;
+        out=out.replace(/import[^\n;]*from\s*['"]react\/jsx-runtime['"];?/g,'');
+        out=out.replace(/import[^\n;]*from\s*['"]react\/jsx-dev-runtime['"];?/g,'');
+        var shim='function __jsx(type,props,key){props=props||{};var ch=props.children;var cfg={};for(var k in props){if(k!=="children")cfg[k]=props[k];}if(key!==undefined)cfg.key=key;if(ch===undefined)return React.createElement(type,cfg);if(Array.isArray(ch))return React.createElement.apply(null,[type,cfg].concat(ch));return React.createElement(type,cfg,ch);}var _jsx=__jsx,_jsxs=__jsx,_jsxDEV=__jsx,_Fragment=React.Fragment;\n';
+        out=shim+out;
+        var blob=new Blob([out],{type:'text/javascript'});
         var url=URL.createObjectURL(blob);
         return import(url);
       }).then(function(mod){
