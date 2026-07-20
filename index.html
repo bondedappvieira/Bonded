@@ -1,39 +1,56 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Bonded — Officially in love</title>
-  <meta name="description" content="Bonded — rede social e encontros. Sente o coração de quem amas." />
-  <meta name="theme-color" content="#c9963a" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="icon" type="image/png" href="/icon-192.png" />
-  <link rel="apple-touch-icon" href="/icon-192.png" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Bonded" />
-  <style>
-    * { -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; padding: 0; background: #fdf6ee; }
-    #root { min-height: 100vh; }
-    #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #fdf6ee; font-family: Georgia, serif; }
-    #boot .ring { width: 46px; height: 46px; border-radius: 50%; border: 4px solid rgba(201,150,58,0.25); border-top-color: #c9963a; animation: spin 1s linear infinite; }
-    #boot .name { font-size: 20px; letter-spacing: 2px; color: #1a1209; }
-    #boot .sub { font-size: 12px; color: #8a7060; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Bonded — Officially in love</title>
+<meta name="theme-color" content="#c9963a" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+<style>
+html,body{margin:0;padding:0;background:#fdf6ee}#root{min-height:100vh}
+#boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fdf6ee;font-family:Georgia,serif;padding:24px;text-align:center}
+#boot .ring{width:46px;height:46px;border-radius:50%;border:4px solid rgba(201,150,58,.25);border-top-color:#c9963a;animation:spin 1s linear infinite}
+#boot .name{font-size:20px;letter-spacing:2px;color:#1a1209}#boot .sub{font-size:12px;color:#8a7060;max-width:90%}
+#boot.err .ring{display:none}#boot.err .sub{color:#c4606a;font-size:13px;white-space:pre-wrap}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+<script>
+function bootError(m){var b=document.getElementById('boot');if(!b)return;b.className='err';var n=b.querySelector('.name');if(n)n.textContent='⚠️ Erro';var s=b.querySelector('.sub');if(s)s.textContent=String(m);}
+function bootStatus(m){var b=document.getElementById('boot');if(b){var s=b.querySelector('.sub');if(s&&b.className!=='err')s.textContent=m;}}
+window.addEventListener('error',function(e){bootError((e&&e.message?e.message:'erro')+(e&&e.filename?' @ '+String(e.filename).split('/').pop():''));});
+window.addEventListener('unhandledrejection',function(e){bootError('Promise: '+(e&&e.reason?(e.reason.message||e.reason):'rejeitada'));});
+</script>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" onerror="bootError('Falhou React')"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" onerror="bootError('Falhou ReactDOM')"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" onerror="bootError('Falhou Babel')"></script>
 </head>
 <body>
-  <div id="root">
-    <div id="boot"><div class="ring"></div><div class="name">Bonded</div><div class="sub">a carregar…</div></div>
-  </div>
-  <script type="text/babel" data-type="module" data-presets="react">
-    import App from './src/App.jsx';
-    const container = document.getElementById('root');
-    container.innerHTML = '';
-    ReactDOM.createRoot(container).render(React.createElement(App));
-  </script>
+<div id="root"><div id="boot"><div class="ring"></div><div class="name">Bonded</div><div class="sub">a carregar…</div></div></div>
+<script>
+(function(){
+  function run(){
+    try{
+      if(typeof Babel==='undefined'){ return setTimeout(run,150); }
+      bootStatus('a preparar a app…');
+      fetch('./src/App.jsx').then(function(r){
+        if(!r.ok) throw new Error('src/App.jsx nao encontrado ('+r.status+')');
+        return r.text();
+      }).then(function(code){
+        var out=Babel.transform(code,{presets:['react'],filename:'App.jsx',sourceType:'module'});
+        var blob=new Blob([out.code],{type:'text/javascript'});
+        var url=URL.createObjectURL(blob);
+        return import(url);
+      }).then(function(mod){
+        var App=mod.default;
+        if(!App) throw new Error('App nao exportado');
+        var c=document.getElementById('root'); c.innerHTML='';
+        ReactDOM.createRoot(c).render(React.createElement(App));
+      }).catch(function(e){ bootError(e&&e.message?e.message:e); });
+    }catch(e){ bootError(e&&e.message?e.message:e); }
+  }
+  run();
+})();
+</script>
 </body>
 </html>
